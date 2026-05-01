@@ -1,0 +1,10 @@
+{
+  "name": "rad-am-ring-plugin",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test",
+    "test:js": "node --test tests/*.test.js",
+    "lint:js": "node --check assets/js/race-logic.js && node --check assets/js/dashboard.js"
+  }
+}

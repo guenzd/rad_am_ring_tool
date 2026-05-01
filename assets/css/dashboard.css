@@ -1,286 +1,802 @@
 /* Rad am Ring Dashboard Styles */
 
 :root {
-    --rar-bg: #1a1a1a;
-    --rar-text: #ffffff;
-    --rar-border: #404040;
-    --rar-input-bg: #2a2a2a;
-    --rar-primary: #4CAF50;
-    --rar-primary-hover: #45a049;
-    --rar-secondary: #5ba3d5;
-    --rar-secondary-hover: #4a92c4;
-    --rar-success: #4CAF50;
-    --rar-success-hover: #45a049;
-    --rar-danger: #f44336;
-    --rar-danger-hover: #da190b;
-    --rar-card-bg: #252525;
+    --rar-page-bg: #a8a8a8;
+    --rar-surface: #ffffff;
+    --rar-surface-soft: #f4f5f7;
+    --rar-surface-dark: #111111;
+    --rar-text: #202020;
+    --rar-muted: #656565;
+    --rar-border: #d7dbe0;
+    --rar-border-strong: #b7bec8;
+    --rar-primary: #00378a;
+    --rar-primary-hover: #002a69;
+    --rar-secondary: #1177aa;
+    --rar-secondary-hover: #005e91;
+    --rar-success: #11aa44;
+    --rar-success-hover: #0b8735;
+    --rar-danger: #aa1d11;
+    --rar-danger-hover: #87150c;
+    --rar-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
 }
 
-/* Main Container */
+#wpbody-content {
+    background: var(--rar-page-bg);
+}
+
+.rar-container,
+.rar-container * {
+    box-sizing: border-box;
+}
+
 .rar-container {
-    background-color: var(--rar-bg);
+    max-width: 1220px;
+    min-height: calc(100vh - 90px);
+    margin: 12px auto 40px;
+    padding: 0 22px 32px;
     color: var(--rar-text);
-    padding: 20px;
-    margin-top: 20px;
-    min-height: 100vh;
-    font-family: Arial, sans-serif;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-.rar-header {
-    text-align: center;
-    margin-bottom: 40px;
-    border-bottom: 3px solid var(--rar-primary);
-    padding-bottom: 20px;
+.rar-public-container {
+    min-height: 0;
+    margin: 0 auto;
+    padding: 0;
 }
 
-.rar-header h1 {
-    font-size: 48px;
-    margin: 10px 0;
-    color: var(--rar-primary);
-    font-weight: bold;
-}
-
-.rar-header p {
-    font-size: 18px;
-    color: #aaa;
-}
-
-/* Content Sections */
 .rar-content {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 18px;
+}
+
+.rar-public-empty p {
+    margin: 0;
+    color: var(--rar-muted);
+    font-weight: 700;
+}
+
+.rar-setup-panel {
+    background: var(--rar-surface);
+    border: 1px solid var(--rar-border);
+    border-top: 5px solid #111111;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08);
+}
+
+.rar-setup-panel > summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: center;
+    min-height: 46px;
+    padding: 10px 16px;
+    cursor: pointer;
+    color: #111111;
+    font-size: 16px;
+    font-weight: 800;
+    list-style: none;
+}
+
+.rar-setup-panel > summary::-webkit-details-marker {
+    display: none;
+}
+
+.rar-setup-panel > summary::after {
+    content: "+";
+    color: var(--rar-danger);
+    font-size: 22px;
+    line-height: 1;
+}
+
+.rar-setup-panel[open] > summary::after {
+    content: "-";
+}
+
+.rar-setup-panel > summary strong {
+    margin-left: auto;
+    color: var(--rar-muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.rar-setup-section {
+    padding: 0 16px 16px;
 }
 
 .rar-section {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 18px;
 }
 
 .rar-section > h2 {
     grid-column: 1 / -1;
-    font-size: 32px;
-    margin: 0 0 10px 0;
-    border-bottom: 2px solid var(--rar-secondary);
-    padding-bottom: 10px;
+    margin: 4px 0 0;
+    padding: 0 0 12px;
+    color: #111111;
+    border-bottom: 4px solid #111111;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.15;
 }
 
-/* Cards */
-.rar-card {
-    background-color: var(--rar-card-bg);
-    border: 2px solid var(--rar-border);
-    padding: 25px;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.rar-card:hover {
-    border-color: var(--rar-primary);
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
-}
-
-.rar-card h3 {
-    font-size: 20px;
-    margin: 0 0 15px 0;
-    color: var(--rar-secondary);
-}
-
-.rar-card-large {
+.rar-race-title-row {
     grid-column: 1 / -1;
-    background: linear-gradient(135deg, var(--rar-card-bg) 0%, #333333 100%);
-    border-color: var(--rar-success);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
 }
 
-/* Forms */
-.rar-form-group {
+.rar-race-title-actions {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+    align-items: stretch;
+    justify-content: flex-end;
 }
 
-.rar-input,
-.rar-input-large {
-    padding: 15px;
-    font-size: 16px;
-    background-color: var(--rar-input-bg);
-    color: var(--rar-text);
-    border: 2px solid var(--rar-border);
-    border-radius: 4px;
-    transition: all 0.3s ease;
-}
-
-.rar-input:focus,
-.rar-input-large:focus {
-    outline: none;
-    border-color: var(--rar-primary);
-    box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
-}
-
-.rar-input-large {
-    font-size: 18px;
-    padding: 20px;
-}
-
-/* Buttons */
-.rar-btn {
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: bold;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.rar-readonly-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 8px 10px;
+    color: #111111;
+    background: #f2c94c;
+    border-left: 5px solid #111111;
+    font-size: 12px;
+    font-weight: 900;
     text-transform: uppercase;
 }
 
-.rar-btn-large {
-    padding: 25px 50px;
-    font-size: 20px;
-    min-height: 70px;
+.rar-race-title-row h2 {
+    margin: 4px 0 0;
+    padding: 0 0 12px;
+    color: var(--rar-primary);
+    border-bottom: 4px solid var(--rar-primary);
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+#activeRaceName {
+    color: var(--rar-primary);
+    border-bottom-color: var(--rar-primary);
+}
+
+.rar-lap-prognosis {
+    display: grid;
+    min-width: 150px;
+    padding: 10px 12px;
+    background: #111111;
+    border-left: 5px solid var(--rar-success);
+    color: #ffffff;
+    text-align: right;
+}
+
+.rar-lap-prognosis strong {
+    font-size: 30px;
+    line-height: 1;
+}
+
+.rar-lap-prognosis span {
+    margin-top: 3px;
+    color: #d9dde2;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.rar-lap-prognosis em {
+    justify-self: end;
+    margin-top: 6px;
+    padding: 3px 7px;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.rar-lap-prognosis em.is-high {
+    color: #ffffff;
+    background: var(--rar-success);
+}
+
+.rar-lap-prognosis em.is-medium {
+    color: #111111;
+    background: #f2c94c;
+}
+
+.rar-lap-prognosis em.is-low {
+    color: #ffffff;
+    background: var(--rar-danger);
+}
+
+.rar-race-config {
+    grid-column: 1 / -1;
+    width: fit-content;
+    margin-top: -6px;
+    padding: 8px 12px;
+    color: #ffffff;
+    background: #111111;
+    border-left: 5px solid var(--rar-danger);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.rar-card {
+    min-width: 0;
+    padding: 22px;
+    background: var(--rar-surface);
+    border: 1px solid var(--rar-border);
+    border-top: 5px solid var(--rar-primary);
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08);
+}
+
+.rar-card:hover {
+    border-color: var(--rar-border-strong);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+}
+
+.rar-card h3 {
+    margin: 0 0 16px;
+    color: #111111;
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.rar-card-forecast {
+    border-top-color: var(--rar-danger);
+}
+
+.rar-form-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    align-items: stretch;
+}
+
+.rar-field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+}
+
+.rar-field span {
+    color: #111111;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.rar-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    color: var(--rar-text);
+    background: var(--rar-surface-soft);
+    border: 1px solid var(--rar-border-strong);
+    border-radius: 0;
+    font-size: 16px;
+    line-height: 1.25;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.rar-input:focus {
+    outline: 3px solid rgba(17, 119, 170, 0.22);
+    border-color: var(--rar-secondary);
+    background: #ffffff;
+}
+
+.rar-textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.rar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    text-transform: uppercase;
+    transition: background-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.rar-btn:hover {
+    transform: translateY(-1px);
+}
+
+.rar-btn:focus-visible {
+    outline: 3px solid rgba(17, 119, 170, 0.35);
+    outline-offset: 2px;
 }
 
 .rar-btn-primary {
-    background-color: var(--rar-primary);
-    color: #000;
+    color: #ffffff;
+    background: var(--rar-primary);
 }
 
 .rar-btn-primary:hover {
-    background-color: var(--rar-primary-hover);
-    box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+    background: var(--rar-primary-hover);
+    box-shadow: 0 8px 16px rgba(0, 55, 138, 0.24);
 }
 
 .rar-btn-secondary {
-    background-color: var(--rar-secondary);
-    color: #000;
+    color: #ffffff;
+    background: var(--rar-secondary);
 }
 
 .rar-btn-secondary:hover {
-    background-color: var(--rar-secondary-hover);
-    box-shadow: 0 0 15px rgba(91, 163, 213, 0.5);
+    background: var(--rar-secondary-hover);
+    box-shadow: 0 8px 16px rgba(17, 119, 170, 0.22);
 }
 
 .rar-btn-success {
-    background-color: var(--rar-success);
-    color: #000;
+    color: #ffffff;
+    background: var(--rar-success);
 }
 
 .rar-btn-success:hover {
-    background-color: var(--rar-success-hover);
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
-    transform: scale(1.05);
+    background: var(--rar-success-hover);
+    box-shadow: 0 10px 20px rgba(17, 170, 68, 0.28);
 }
 
 .rar-btn-danger {
-    background-color: var(--rar-danger);
-    color: #fff;
     width: 100%;
+    color: #ffffff;
+    background: var(--rar-danger);
 }
 
 .rar-btn-danger:hover {
-    background-color: var(--rar-danger-hover);
-    box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+    background: var(--rar-danger-hover);
+    box-shadow: 0 8px 16px rgba(170, 29, 17, 0.24);
+}
+
+.rar-btn-full {
+    width: 100%;
 }
 
 .rar-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.52;
     cursor: not-allowed;
+    transform: none;
 }
 
-/* Drivers List */
 .rar-drivers-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+.rar-drivers-list > p,
+.rar-log > p {
+    margin: 0;
+    color: var(--rar-muted);
+    font-weight: 700;
 }
 
 .rar-driver-card {
-    background-color: #1a1a1a;
-    border: 2px solid var(--rar-primary);
-    padding: 15px;
-    border-radius: 4px;
-    text-align: center;
+    position: relative;
+    padding: 16px;
+    background: var(--rar-surface-soft);
+    border: 1px solid var(--rar-border);
+    border-left: 5px solid var(--rar-danger);
+}
+
+.rar-driver-order {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: var(--rar-muted);
+    font-size: 13px;
+    font-weight: 800;
 }
 
 .rar-driver-name {
-    font-size: 18px;
-    font-weight: bold;
+    padding-right: 44px;
+    margin-bottom: 10px;
     color: var(--rar-primary);
-    margin-bottom: 8px;
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1.2;
 }
 
 .rar-driver-stat {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    color: var(--rar-muted);
+    border-top: 1px solid var(--rar-border);
     font-size: 14px;
-    color: #aaa;
-    margin: 4px 0;
+    font-weight: 700;
 }
 
-/* Log Display */
 .rar-log {
     max-height: 300px;
     overflow-y: auto;
-    background-color: #1a1a1a;
-    border: 1px solid var(--rar-border);
-    border-radius: 4px;
-    padding: 10px;
-    font-family: monospace;
+    margin-top: 12px;
+    padding: 12px;
+    background: #111111;
+    border: 1px solid #111111;
+    color: #f7f7f7;
+    font-family: Consolas, Monaco, monospace;
     font-size: 13px;
 }
 
 .rar-log-entry {
-    padding: 8px 0;
-    border-bottom: 1px solid var(--rar-border);
-    color: var(--rar-secondary);
+    padding: 10px 0;
+    color: #f7f7f7;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .rar-log-entry:last-child {
-    border-bottom: none;
+    border-bottom: 0;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+.rar-forecast-list {
+    display: grid;
+    gap: 10px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.rar-sequence-editor {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: stretch;
+    margin-bottom: 14px;
+}
+
+.rar-sequence-editor .rar-btn {
+    justify-self: end;
+    min-width: 150px;
+}
+
+.rar-queue-builder {
+    display: grid;
+    gap: 12px;
+}
+
+.rar-queue-pattern {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: end;
+    padding: 10px;
+    background: var(--rar-surface-soft);
+    border: 1px solid var(--rar-border);
+}
+
+.rar-queue-add,
+.rar-queue-lane {
+    min-width: 0;
+}
+
+.rar-queue-add h4,
+.rar-queue-lane h4 {
+    margin: 0 0 8px;
+    color: #111111;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.rar-queue-buttons {
+    display: grid;
+    gap: 8px;
+}
+
+.rar-queue-buttons > p,
+.rar-queue-list > p {
+    margin: 0;
+    color: var(--rar-muted);
+    font-weight: 700;
+}
+
+.rar-queue-button-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    background: var(--rar-surface-soft);
+    border: 1px solid var(--rar-border);
+}
+
+.rar-queue-button-row span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--rar-primary);
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rar-queue-lanes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.rar-queue-list {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-height: 96px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 8px;
+    background: #ffffff;
+    border: 1px dashed var(--rar-border-strong);
+}
+
+.rar-queue-item {
+    display: grid;
+    grid-template-columns: auto minmax(120px, 1fr) minmax(150px, 0.8fr) auto auto auto;
+    gap: 8px;
+    align-items: center;
+    min-height: 42px;
+    padding: 8px;
+    background: var(--rar-surface-soft);
+    border: 1px solid var(--rar-border);
+    border-left: 4px solid var(--rar-primary);
+}
+
+.rar-queue-item strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--rar-primary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rar-queue-driver-select {
+    min-width: 0;
+    height: 34px;
+    padding: 5px 8px;
+    border: 1px solid var(--rar-border);
+    background: #ffffff;
+    color: #111111;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.rar-queue-grip {
+    color: var(--rar-muted);
+    cursor: grab;
+    font-weight: 800;
+}
+
+.rar-mini-btn,
+.rar-mini-icon {
+    min-height: 30px;
+    padding: 5px 8px;
+    border: 0;
+    cursor: pointer;
+    color: #ffffff;
+    background: var(--rar-secondary);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.rar-mini-icon {
+    min-width: 34px;
+    padding-inline: 6px;
+    background: #111111;
+}
+
+.rar-queue-remove {
+    background: var(--rar-danger);
+}
+
+.rar-forecast-list > p {
+    margin: 0;
+    color: var(--rar-muted);
+    font-weight: 700;
+}
+
+.rar-forecast-note {
+    padding: 10px 12px;
+    color: var(--rar-muted);
+    background: var(--rar-surface-soft);
+    border: 1px dashed var(--rar-border-strong);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.rar-forecast-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    min-height: 58px;
+    padding: 12px;
+    background: var(--rar-surface-soft);
+    border: 1px solid var(--rar-border);
+    border-left: 5px solid var(--rar-primary);
+}
+
+.rar-forecast-item.is-current {
+    background: #111111;
+    border-left-color: var(--rar-success);
+    color: #ffffff;
+}
+
+.rar-forecast-item.is-final {
+    border-left-color: var(--rar-danger);
+}
+
+.rar-forecast-main {
+    display: flex;
+    min-width: 0;
+    gap: 10px;
+    align-items: center;
+}
+
+.rar-forecast-order {
+    flex: 0 0 auto;
+    color: var(--rar-danger);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.rar-forecast-item.is-current .rar-forecast-order {
+    color: var(--rar-success);
+}
+
+.rar-forecast-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--rar-primary);
+    font-size: 18px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rar-forecast-item.is-current .rar-forecast-name {
+    color: #ffffff;
+}
+
+.rar-forecast-meta {
+    display: grid;
+    gap: 3px;
+    justify-items: end;
+    color: var(--rar-muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.rar-forecast-meta strong {
+    color: #111111;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 18px;
+}
+
+.rar-forecast-item.is-current .rar-forecast-meta,
+.rar-forecast-item.is-current .rar-forecast-meta strong {
+    color: #ffffff;
+}
+
+.rar-switch-preview {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 12px;
+    margin-bottom: 14px;
+    padding: 12px;
+    background: var(--rar-surface-soft);
+    border-left: 5px solid var(--rar-danger);
+    color: var(--rar-muted);
+    font-weight: 800;
+}
+
+.rar-switch-time {
+    margin-bottom: 12px;
+}
+
+.rar-switch-preview span {
+    color: var(--rar-muted);
+    font-size: 13px;
+}
+
+.rar-switch-preview strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--rar-primary);
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rar-message {
+    position: fixed;
+    top: 44px;
+    right: 24px;
+    z-index: 100000;
+    max-width: min(420px, calc(100vw - 48px));
+    padding: 14px 18px;
+    color: #ffffff;
+    border-left: 6px solid #111111;
+    box-shadow: var(--rar-shadow);
+    font-weight: 800;
+}
+
+.rar-message.success {
+    background: var(--rar-success);
+}
+
+.rar-message.error {
+    background: var(--rar-danger);
+}
+
+@media (max-width: 782px) {
     .rar-container {
-        padding: 10px;
-    }
-
-    .rar-header h1 {
-        font-size: 32px;
-    }
-
-    .rar-btn-large {
-        padding: 20px 30px;
-        font-size: 18px;
-        min-height: 60px;
-    }
-
-    .rar-card {
-        grid-column: 1 / -1;
+        margin-top: 10px;
+        padding: 0 12px 24px;
     }
 
     .rar-section {
         grid-template-columns: 1fr;
     }
-}
 
-/* Status Messages */
-.rar-message {
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 4px;
-    font-weight: bold;
-}
+    .rar-race-title-row {
+        grid-template-columns: 1fr;
+    }
 
-.rar-message.success {
-    background-color: rgba(76, 175, 80, 0.2);
-    color: var(--rar-success);
-    border: 2px solid var(--rar-success);
-}
+    .rar-race-title-actions {
+        justify-content: stretch;
+    }
 
-.rar-message.error {
-    background-color: rgba(244, 67, 54, 0.2);
-    color: var(--rar-danger);
-    border: 2px solid var(--rar-danger);
+    .rar-lap-prognosis {
+        text-align: left;
+    }
+
+    .rar-lap-prognosis em {
+        justify-self: start;
+    }
+
+    .rar-card {
+        padding: 18px;
+    }
+
+    .rar-form-group {
+        grid-template-columns: 1fr;
+    }
+
+    .rar-forecast-item {
+        grid-template-columns: 1fr;
+    }
+
+    .rar-forecast-meta {
+        justify-items: start;
+    }
+
+    .rar-sequence-editor {
+        grid-template-columns: 1fr;
+    }
+
+    .rar-sequence-editor .rar-btn {
+        justify-self: stretch;
+    }
+
+    .rar-queue-lanes,
+    .rar-queue-button-row,
+    .rar-queue-pattern,
+    .rar-queue-item {
+        grid-template-columns: 1fr;
+    }
+
+    .rar-message {
+        top: 56px;
+        right: 12px;
+    }
 }

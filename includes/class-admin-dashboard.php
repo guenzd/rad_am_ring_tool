@@ -46,9 +46,17 @@ class RAR_Admin_Dashboard {
         );
 
         wp_enqueue_script(
+            'rar-race-logic-js',
+            RAR_PLUGIN_URL . 'assets/js/race-logic.js',
+            [],
+            RAR_PLUGIN_VERSION,
+            true
+        );
+
+        wp_enqueue_script(
             'rar-dashboard-js',
             RAR_PLUGIN_URL . 'assets/js/dashboard.js',
-            [ 'jquery' ],
+            [ 'jquery', 'rar-race-logic-js' ],
             RAR_PLUGIN_VERSION,
             true
         );
@@ -57,6 +65,10 @@ class RAR_Admin_Dashboard {
         wp_localize_script( 'rar-dashboard-js', 'rarData', [
             'ajaxUrl' => admin_url( 'admin-ajax.php' ),
             'nonce' => wp_create_nonce( 'rar_nonce' ),
+            'canEdit' => current_user_can( 'manage_options' ),
+            'readOnly' => ! current_user_can( 'manage_options' ),
+            'publicMode' => false,
+            'raceId' => 0,
         ] );
     }
 

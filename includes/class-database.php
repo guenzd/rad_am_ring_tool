@@ -23,6 +23,9 @@ class RAR_Database {
             race_name varchar(255) NOT NULL,
             start_time datetime DEFAULT CURRENT_TIMESTAMP,
             end_time datetime NULL,
+            planned_end_time datetime NULL,
+            first_lap_extra_time decimal(10, 2) NOT NULL DEFAULT 0 COMMENT 'in seconds',
+            rotation_sequence longtext NULL,
             total_laps int(11) DEFAULT 0,
             notes longtext NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
@@ -33,6 +36,7 @@ class RAR_Database {
         $sql_drivers = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}rar_drivers (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             race_id bigint(20) NOT NULL,
+            driver_order int(11) NOT NULL DEFAULT 0,
             driver_name varchar(255) NOT NULL,
             avg_lap_time decimal(10, 2) NULL COMMENT 'in seconds',
             total_laps int(11) DEFAULT 0,
@@ -75,21 +79,97 @@ class RAR_Database {
         dbDelta( $sql_drivers );
         dbDelta( $sql_laps );
         dbDelta( $sql_rotations );
+
+        self::maybe_add_column(
+            "{$wpdb->prefix}rar_race_sessions",
+            'first_lap_extra_time',
+            "ALTER TABLE {$wpdb->prefix}rar_race_sessions ADD COLUMN first_lap_extra_time decimal(10, 2) NOT NULL DEFAULT 0 COMMENT 'in seconds' AFTER end_time"
+        );
+
+        self::maybe_add_column(
+            "{$wpdb->prefix}rar_race_sessions",
+            'planned_end_time',
+            "ALTER TABLE {$wpdb->prefix}rar_race_sessions ADD COLUMN planned_end_time datetime NULL AFTER end_time"
+        );
+
+        self::maybe_add_column(
+            "{$wpdb->prefix}rar_race_sessions",
+            'rotation_sequence',
+            "ALTER TABLE {$wpdb->prefix}rar_race_sessions ADD COLUMN rotation_sequence longtext NULL AFTER first_lap_extra_time"
+        );
+
+        self::maybe_add_column(
+            "{$wpdb->prefix}rar_drivers",
+            'driver_order',
+            "ALTER TABLE {$wpdb->prefix}rar_drivers ADD COLUMN driver_order int(11) NOT NULL DEFAULT 0 AFTER race_id"
+        );
+
+        self::backfill_driver_order();
+    }
+
+    /**
+     * Add a column when dbDelta does not alter an existing table.
+     */
+    private static function maybe_add_column( $table, $column, $alter_sql ) {
+        global $wpdb;
+
+        $column_exists = $wpdb->get_var( $wpdb->prepare(
+            "SHOW COLUMNS FROM {$table} LIKE %s",
+            $column
+        ) );
+
+        if ( ! $column_exists ) {
+            $wpdb->query( $alter_sql );
+        }
+    }
+
+    /**
+     * Existing drivers keep their creation order as the default rotation.
+     */
+    private static function backfill_driver_order() {
+        global $wpdb;
+
+        $race_ids = $wpdb->get_col(
+            "SELECT DISTINCT race_id FROM {$wpdb->prefix}rar_drivers WHERE driver_order = 0 ORDER BY race_id ASC"
+        );
+
+        foreach ( $race_ids as $race_id ) {
+            $drivers = $wpdb->get_results( $wpdb->prepare(
+                "SELECT id FROM {$wpdb->prefix}rar_drivers WHERE race_id = %d ORDER BY created_at ASC, id ASC",
+                $race_id
+            ) );
+
+            $driver_order = 1;
+            foreach ( $drivers as $driver ) {
+                $wpdb->update(
+                    "{$wpdb->prefix}rar_drivers",
+                    [ 'driver_order' => $driver_order ],
+                    [ 'id' => $driver->id ],
+                    [ '%d' ],
+                    [ '%d' ]
+                );
+                $driver_order++;
+            }
+        }
     }
 
     /**
      * Create a new race session
      */
-    public static function create_race( $race_name ) {
+    public static function create_race( $race_name, $first_lap_extra_time = 0, $start_time = null, $planned_end_time = null ) {
         global $wpdb;
+
+        $start_time = $start_time ?: current_time( 'mysql' );
         
         $wpdb->insert( 
             "{$wpdb->prefix}rar_race_sessions",
             [
                 'race_name' => $race_name,
-                'start_time' => current_time( 'mysql' ),
+                'start_time' => $start_time,
+                'planned_end_time' => $planned_end_time,
+                'first_lap_extra_time' => $first_lap_extra_time,
             ],
-            [ '%s', '%s' ]
+            [ '%s', '%s', '%s', '%f' ]
         );
 
         return $wpdb->insert_id;
@@ -100,18 +180,88 @@ class RAR_Database {
      */
     public static function add_driver( $race_id, $driver_name, $avg_lap_time = null ) {
         global $wpdb;
+
+        $driver_order = intval( $wpdb->get_var( $wpdb->prepare(
+            "SELECT COALESCE(MAX(driver_order), 0) + 1 FROM {$wpdb->prefix}rar_drivers WHERE race_id = %d",
+            $race_id
+        ) ) );
         
         $wpdb->insert(
             "{$wpdb->prefix}rar_drivers",
             [
                 'race_id' => $race_id,
+                'driver_order' => $driver_order,
                 'driver_name' => $driver_name,
                 'avg_lap_time' => $avg_lap_time,
             ],
-            [ '%d', '%s', '%f' ]
+            [ '%d', '%d', '%s', '%f' ]
         );
 
         return $wpdb->insert_id;
+    }
+
+    /**
+     * Save a race-specific rotation sequence.
+     */
+    public static function save_rotation_sequence( $race_id, $rotation_sequence ) {
+        global $wpdb;
+
+        $wpdb->update(
+            "{$wpdb->prefix}rar_race_sessions",
+            [ 'rotation_sequence' => $rotation_sequence ],
+            [ 'id' => $race_id ],
+            [ '%s' ],
+            [ '%d' ]
+        );
+    }
+
+    /**
+     * Set or correct the race start time.
+     */
+    public static function start_race( $race_id, $start_time ) {
+        global $wpdb;
+
+        $wpdb->update(
+            "{$wpdb->prefix}rar_race_sessions",
+            [ 'start_time' => $start_time ],
+            [ 'id' => $race_id ],
+            [ '%s' ],
+            [ '%d' ]
+        );
+    }
+
+    /**
+     * Validate rotation sequence tokens against driver order numbers.
+     */
+    public static function validate_rotation_sequence( $race_id, $rotation_sequence ) {
+        global $wpdb;
+
+        $rotation_sequence = trim( $rotation_sequence );
+        if ( '' === $rotation_sequence ) {
+            return '';
+        }
+
+        if ( substr_count( $rotation_sequence, '|' ) > 1 ) {
+            return 'Bitte nur einen Trenner "|" verwenden';
+        }
+
+        $valid_orders = array_map( 'intval', $wpdb->get_col( $wpdb->prepare(
+            "SELECT driver_order FROM {$wpdb->prefix}rar_drivers WHERE race_id = %d",
+            $race_id
+        ) ) );
+
+        if ( empty( $valid_orders ) ) {
+            return 'Bitte zuerst Fahrer hinzufügen';
+        }
+
+        $tokens = preg_split( '/[\s,|]+/', $rotation_sequence, -1, PREG_SPLIT_NO_EMPTY );
+        foreach ( $tokens as $token ) {
+            if ( ! ctype_digit( $token ) || ! in_array( intval( $token ), $valid_orders, true ) ) {
+                return sprintf( 'Unbekannte Fahrernummer: %s', $token );
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -119,6 +269,20 @@ class RAR_Database {
      */
     public static function record_lap( $driver_id, $race_id, $lap_time ) {
         global $wpdb;
+
+        $race_lap_count = intval( $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}rar_lap_times WHERE race_id = %d",
+            $race_id
+        ) ) );
+
+        if ( 0 === $race_lap_count ) {
+            $first_lap_extra_time = floatval( $wpdb->get_var( $wpdb->prepare(
+                "SELECT first_lap_extra_time FROM {$wpdb->prefix}rar_race_sessions WHERE id = %d",
+                $race_id
+            ) ) );
+
+            $lap_time += $first_lap_extra_time;
+        }
 
         // Get current lap number for this driver
         $lap_count = $wpdb->get_var( $wpdb->prepare(
@@ -149,8 +313,10 @@ class RAR_Database {
     /**
      * Record driver switch
      */
-    public static function record_driver_switch( $race_id, $from_driver_id, $to_driver_id ) {
+    public static function record_driver_switch( $race_id, $from_driver_id, $to_driver_id, $switched_at = null ) {
         global $wpdb;
+
+        $switched_at = $switched_at ?: current_time( 'mysql' );
 
         $wpdb->insert(
             "{$wpdb->prefix}rar_driver_rotations",
@@ -158,12 +324,37 @@ class RAR_Database {
                 'race_id' => $race_id,
                 'from_driver_id' => $from_driver_id,
                 'to_driver_id' => $to_driver_id,
-                'switched_at' => current_time( 'mysql' ),
+                'switched_at' => $switched_at,
             ],
             [ '%d', '%d', '%d', '%s' ]
         );
 
         return $wpdb->insert_id;
+    }
+
+    /**
+     * Delete the latest driver switch for a race.
+     */
+    public static function undo_last_driver_switch( $race_id ) {
+        global $wpdb;
+
+        $switch_id = $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM {$wpdb->prefix}rar_driver_rotations
+             WHERE race_id = %d
+             ORDER BY switched_at DESC, id DESC
+             LIMIT 1",
+            $race_id
+        ) );
+
+        if ( ! $switch_id ) {
+            return false;
+        }
+
+        return (bool) $wpdb->delete(
+            "{$wpdb->prefix}rar_driver_rotations",
+            [ 'id' => $switch_id ],
+            [ '%d' ]
+        );
     }
 
     /**
@@ -173,7 +364,7 @@ class RAR_Database {
         global $wpdb;
 
         $stats = $wpdb->get_row( $wpdb->prepare(
-            "SELECT COUNT(*) as total_laps, AVG(lap_time) as avg_lap_time, SUM(lap_time) as total_time
+            "SELECT COUNT(*) as total_laps, SUM(lap_time) as total_time
              FROM {$wpdb->prefix}rar_lap_times
              WHERE driver_id = %d AND race_id = %d",
             $driver_id,
@@ -185,11 +376,10 @@ class RAR_Database {
                 "{$wpdb->prefix}rar_drivers",
                 [
                     'total_laps' => $stats->total_laps,
-                    'avg_lap_time' => $stats->avg_lap_time,
                     'total_time' => $stats->total_time,
                 ],
                 [ 'id' => $driver_id ],
-                [ '%d', '%f', '%f' ],
+                [ '%d', '%f' ],
                 [ '%d' ]
             );
         }
@@ -223,9 +413,32 @@ class RAR_Database {
         ) );
 
         $drivers = $wpdb->get_results( $wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}rar_drivers WHERE race_id = %d ORDER BY created_at ASC",
+            "SELECT d.*,
+                (
+                    SELECT AVG(l.lap_time)
+                    FROM {$wpdb->prefix}rar_lap_times l
+                    WHERE l.driver_id = d.id AND l.race_id = d.race_id
+                ) as actual_avg_lap_time
+             FROM {$wpdb->prefix}rar_drivers d
+             WHERE d.race_id = %d
+             ORDER BY d.driver_order ASC, d.created_at ASC, d.id ASC",
             $race_id
         ) );
+
+        $latest_lap = $wpdb->get_row( $wpdb->prepare(
+            "SELECT l.*, d.driver_name
+             FROM {$wpdb->prefix}rar_lap_times l
+             LEFT JOIN {$wpdb->prefix}rar_drivers d ON l.driver_id = d.id
+             WHERE l.race_id = %d
+             ORDER BY l.recorded_at DESC, l.id DESC
+             LIMIT 1",
+            $race_id
+        ) );
+
+        $recorded_laps = intval( $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}rar_lap_times WHERE race_id = %d",
+            $race_id
+        ) ) );
 
         $rotations = $wpdb->get_results( $wpdb->prepare(
             "SELECT r.*, d1.driver_name as from_driver, d2.driver_name as to_driver
@@ -240,6 +453,8 @@ class RAR_Database {
         return [
             'race' => $race,
             'drivers' => $drivers,
+            'latest_lap' => $latest_lap,
+            'recorded_laps' => $recorded_laps,
             'rotations' => $rotations,
         ];
     }
