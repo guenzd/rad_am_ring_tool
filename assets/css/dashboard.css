@@ -1,0 +1,286 @@
+/* Rad am Ring Dashboard Styles */
+
+:root {
+    --rar-bg: #1a1a1a;
+    --rar-text: #ffffff;
+    --rar-border: #404040;
+    --rar-input-bg: #2a2a2a;
+    --rar-primary: #4CAF50;
+    --rar-primary-hover: #45a049;
+    --rar-secondary: #5ba3d5;
+    --rar-secondary-hover: #4a92c4;
+    --rar-success: #4CAF50;
+    --rar-success-hover: #45a049;
+    --rar-danger: #f44336;
+    --rar-danger-hover: #da190b;
+    --rar-card-bg: #252525;
+}
+
+/* Main Container */
+.rar-container {
+    background-color: var(--rar-bg);
+    color: var(--rar-text);
+    padding: 20px;
+    margin-top: 20px;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rar-header {
+    text-align: center;
+    margin-bottom: 40px;
+    border-bottom: 3px solid var(--rar-primary);
+    padding-bottom: 20px;
+}
+
+.rar-header h1 {
+    font-size: 48px;
+    margin: 10px 0;
+    color: var(--rar-primary);
+    font-weight: bold;
+}
+
+.rar-header p {
+    font-size: 18px;
+    color: #aaa;
+}
+
+/* Content Sections */
+.rar-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+}
+
+.rar-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.rar-section > h2 {
+    grid-column: 1 / -1;
+    font-size: 32px;
+    margin: 0 0 10px 0;
+    border-bottom: 2px solid var(--rar-secondary);
+    padding-bottom: 10px;
+}
+
+/* Cards */
+.rar-card {
+    background-color: var(--rar-card-bg);
+    border: 2px solid var(--rar-border);
+    padding: 25px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.rar-card:hover {
+    border-color: var(--rar-primary);
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+}
+
+.rar-card h3 {
+    font-size: 20px;
+    margin: 0 0 15px 0;
+    color: var(--rar-secondary);
+}
+
+.rar-card-large {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, var(--rar-card-bg) 0%, #333333 100%);
+    border-color: var(--rar-success);
+}
+
+/* Forms */
+.rar-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rar-input,
+.rar-input-large {
+    padding: 15px;
+    font-size: 16px;
+    background-color: var(--rar-input-bg);
+    color: var(--rar-text);
+    border: 2px solid var(--rar-border);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.rar-input:focus,
+.rar-input-large:focus {
+    outline: none;
+    border-color: var(--rar-primary);
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+.rar-input-large {
+    font-size: 18px;
+    padding: 20px;
+}
+
+/* Buttons */
+.rar-btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.rar-btn-large {
+    padding: 25px 50px;
+    font-size: 20px;
+    min-height: 70px;
+}
+
+.rar-btn-primary {
+    background-color: var(--rar-primary);
+    color: #000;
+}
+
+.rar-btn-primary:hover {
+    background-color: var(--rar-primary-hover);
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+}
+
+.rar-btn-secondary {
+    background-color: var(--rar-secondary);
+    color: #000;
+}
+
+.rar-btn-secondary:hover {
+    background-color: var(--rar-secondary-hover);
+    box-shadow: 0 0 15px rgba(91, 163, 213, 0.5);
+}
+
+.rar-btn-success {
+    background-color: var(--rar-success);
+    color: #000;
+}
+
+.rar-btn-success:hover {
+    background-color: var(--rar-success-hover);
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+    transform: scale(1.05);
+}
+
+.rar-btn-danger {
+    background-color: var(--rar-danger);
+    color: #fff;
+    width: 100%;
+}
+
+.rar-btn-danger:hover {
+    background-color: var(--rar-danger-hover);
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+}
+
+.rar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Drivers List */
+.rar-drivers-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.rar-driver-card {
+    background-color: #1a1a1a;
+    border: 2px solid var(--rar-primary);
+    padding: 15px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.rar-driver-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--rar-primary);
+    margin-bottom: 8px;
+}
+
+.rar-driver-stat {
+    font-size: 14px;
+    color: #aaa;
+    margin: 4px 0;
+}
+
+/* Log Display */
+.rar-log {
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: #1a1a1a;
+    border: 1px solid var(--rar-border);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.rar-log-entry {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--rar-border);
+    color: var(--rar-secondary);
+}
+
+.rar-log-entry:last-child {
+    border-bottom: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .rar-container {
+        padding: 10px;
+    }
+
+    .rar-header h1 {
+        font-size: 32px;
+    }
+
+    .rar-btn-large {
+        padding: 20px 30px;
+        font-size: 18px;
+        min-height: 60px;
+    }
+
+    .rar-card {
+        grid-column: 1 / -1;
+    }
+
+    .rar-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Status Messages */
+.rar-message {
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.rar-message.success {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: var(--rar-success);
+    border: 2px solid var(--rar-success);
+}
+
+.rar-message.error {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: var(--rar-danger);
+    border: 2px solid var(--rar-danger);
+}
