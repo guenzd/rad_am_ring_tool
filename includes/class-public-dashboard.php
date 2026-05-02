@@ -14,22 +14,14 @@ class RAR_Public_Dashboard {
     }
 
     public function render_shortcode( $atts ) {
-        $atts = shortcode_atts(
-            [
-                'race_id' => 0,
-            ],
-            $atts,
-            'rad_am_ring_public'
-        );
-
-        $this->enqueue_assets( intval( $atts['race_id'] ) );
+        $this->enqueue_assets();
 
         ob_start();
         include RAR_PLUGIN_DIR . 'public/dashboard.php';
         return ob_get_clean();
     }
 
-    private function enqueue_assets( $race_id ) {
+    private function enqueue_assets() {
         wp_enqueue_style(
             'rar-dashboard-css',
             RAR_PLUGIN_URL . 'assets/css/dashboard.css',
@@ -58,8 +50,6 @@ class RAR_Public_Dashboard {
             'nonce' => wp_create_nonce( 'rar_nonce' ),
             'canEdit' => false,
             'readOnly' => true,
-            'publicMode' => true,
-            'raceId' => $race_id,
         ] );
     }
 }

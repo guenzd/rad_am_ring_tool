@@ -68,11 +68,16 @@ You can also create a normal WordPress page manually and add this shortcode:
 [rad_am_ring_public]
 ```
 
-It shows the latest race as a public, read-only dashboard. To pin a specific race:
+It always shows the latest race as a public, read-only dashboard.
 
-```text
-[rad_am_ring_public race_id="123"]
-```
+## Finished Race Export
+
+After a race has ended, reload it in the admin dashboard and use **Excel Export**.
+The download is a semicolon-separated CSV that opens in Excel with these columns:
+
+- `Uhrzeit`
+- `Fahrer`
+- `Rundenzeit`
 
 To delete the test database and WordPress files:
 

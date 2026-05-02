@@ -216,6 +216,37 @@ class RAR_Database {
     }
 
     /**
+     * Delete a race and all related race data.
+     */
+    public static function delete_race( $race_id ) {
+        global $wpdb;
+
+        $wpdb->delete(
+            "{$wpdb->prefix}rar_driver_rotations",
+            [ 'race_id' => $race_id ],
+            [ '%d' ]
+        );
+
+        $wpdb->delete(
+            "{$wpdb->prefix}rar_lap_times",
+            [ 'race_id' => $race_id ],
+            [ '%d' ]
+        );
+
+        $wpdb->delete(
+            "{$wpdb->prefix}rar_drivers",
+            [ 'race_id' => $race_id ],
+            [ '%d' ]
+        );
+
+        return (bool) $wpdb->delete(
+            "{$wpdb->prefix}rar_race_sessions",
+            [ 'id' => $race_id ],
+            [ '%d' ]
+        );
+    }
+
+    /**
      * Set or correct the race start time.
      */
     public static function start_race( $race_id, $start_time ) {

@@ -42,6 +42,7 @@ function rar_deactivate_plugin() {
 
 // Initialize plugin
 add_action( 'init', 'rar_init_plugin' );
+add_action( 'template_redirect', 'rar_redirect_public_slug_when_rewrites_disabled' );
 function rar_init_plugin() {
     if ( get_option( 'rar_db_version' ) !== RAR_DB_VERSION ) {
         RAR_Database::create_tables();
@@ -58,6 +59,24 @@ function rar_init_plugin() {
     }
 
     new RAR_Public_Dashboard();
+}
+
+function rar_redirect_public_slug_when_rewrites_disabled() {
+    $path = trim( parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ), '/' );
+
+    if ( 'rad-am-ring-live' !== $path || is_page( 'rad-am-ring-live' ) ) {
+        return;
+    }
+
+    $page_id = intval( get_option( 'rar_public_page_id' ) );
+    if ( ! $page_id ) {
+        $page_id = rar_ensure_public_page();
+    }
+
+    if ( $page_id ) {
+        wp_safe_redirect( add_query_arg( 'page_id', $page_id, home_url( '/' ) ), 302 );
+        exit;
+    }
 }
 
 function rar_ensure_public_page() {
@@ -122,6 +141,8 @@ add_action( 'wp_ajax_rar_get_all_races', 'rar_ajax_get_all_races' );
 add_action( 'wp_ajax_rar_save_rotation_sequence', 'rar_ajax_save_rotation_sequence' );
 add_action( 'wp_ajax_rar_start_race', 'rar_ajax_start_race' );
 add_action( 'wp_ajax_rar_undo_driver_switch', 'rar_ajax_undo_driver_switch' );
+add_action( 'wp_ajax_rar_export_race', 'rar_ajax_export_race' );
+add_action( 'wp_ajax_rar_delete_race', 'rar_ajax_delete_race' );
 add_action( 'wp_ajax_nopriv_rar_get_race_data', 'rar_ajax_get_race_data' );
 add_action( 'wp_ajax_nopriv_rar_get_prognosis', 'rar_ajax_get_prognosis' );
 add_action( 'wp_ajax_nopriv_rar_get_all_races', 'rar_ajax_get_all_races' );
@@ -317,6 +338,36 @@ function rar_ajax_end_race() {
     wp_send_json_success( [ 'ended' => true ] );
 }
 
+function rar_ajax_delete_race() {
+    if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rar_nonce' ) ) {
+        wp_send_json_error( 'Sicherheitsüberprüfung fehlgeschlagen' );
+    }
+
+    rar_require_edit_access();
+
+    $race_id = intval( $_POST['race_id'] ?? 0 );
+    if ( ! $race_id ) {
+        wp_send_json_error( 'Ungültige Daten' );
+    }
+
+    $data = RAR_Database::get_race_data( $race_id );
+    if ( empty( $data['race'] ) ) {
+        wp_send_json_error( 'Rennen nicht gefunden' );
+    }
+
+    $planned_end_time = rar_parse_local_datetime( $data['race']->planned_end_time ?? '' );
+    if ( ! $planned_end_time || $planned_end_time <= new DateTimeImmutable( 'now', wp_timezone() ) ) {
+        wp_send_json_error( 'Rennen können nur gelöscht werden, wenn die geplante Zielzeit in der Zukunft liegt' );
+    }
+
+    $deleted = RAR_Database::delete_race( $race_id );
+    if ( ! $deleted ) {
+        wp_send_json_error( 'Rennen konnte nicht gelöscht werden' );
+    }
+
+    wp_send_json_success( [ 'deleted' => true ] );
+}
+
 function rar_ajax_get_all_races() {
     if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rar_nonce' ) ) {
         wp_send_json_error( 'Sicherheitsüberprüfung fehlgeschlagen' );
@@ -396,4 +447,128 @@ function rar_ajax_undo_driver_switch() {
     }
 
     wp_send_json_success( [ 'undone' => true ] );
+}
+
+function rar_ajax_export_race() {
+    if ( ! isset( $_GET['nonce'] ) || ! wp_verify_nonce( $_GET['nonce'], 'rar_nonce' ) ) {
+        wp_die( 'Sicherheitsüberprüfung fehlgeschlagen', 403 );
+    }
+
+    if ( ! rar_current_user_can_edit() ) {
+        wp_die( 'Nicht autorisiert', 403 );
+    }
+
+    $race_id = intval( $_GET['race_id'] ?? 0 );
+    if ( ! $race_id ) {
+        wp_die( 'Rennen-ID erforderlich', 400 );
+    }
+
+    $data = RAR_Database::get_race_data( $race_id );
+    if ( empty( $data['race'] ) ) {
+        wp_die( 'Rennen nicht gefunden', 404 );
+    }
+
+    if ( empty( $data['race']->end_time ) ) {
+        wp_die( 'Export ist erst nach Rennende verfügbar', 400 );
+    }
+
+    $rows = rar_build_race_export_rows( $data );
+    $filename = sanitize_file_name( $data['race']->race_name . '-rundenzeiten.csv' );
+
+    nocache_headers();
+    header( 'Content-Type: text/csv; charset=utf-8' );
+    header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+
+    $output = fopen( 'php://output', 'w' );
+    fwrite( $output, "\xEF\xBB\xBF" );
+    fputcsv( $output, [ 'Uhrzeit', 'Fahrer', 'Rundenzeit' ], ';' );
+
+    foreach ( $rows as $row ) {
+        fputcsv( $output, $row, ';' );
+    }
+
+    fclose( $output );
+    exit;
+}
+
+function rar_build_race_export_rows( $data ) {
+    $race = $data['race'];
+    $drivers = [];
+    $rows = [];
+
+    foreach ( $data['drivers'] as $driver ) {
+        $drivers[ intval( $driver->id ) ] = $driver;
+    }
+
+    $timezone = wp_timezone();
+    $previous_time = rar_export_datetime( $race->start_time, $timezone );
+    $rotations = $data['rotations'];
+
+    usort(
+        $rotations,
+        function ( $a, $b ) {
+            $time_compare = strcmp( $a->switched_at, $b->switched_at );
+            if ( 0 !== $time_compare ) {
+                return $time_compare;
+            }
+
+            return intval( $a->id ) <=> intval( $b->id );
+        }
+    );
+
+    foreach ( $rotations as $rotation ) {
+        $switch_time = rar_export_datetime( $rotation->switched_at, $timezone );
+
+        if ( ! $previous_time || ! $switch_time || $switch_time <= $previous_time ) {
+            continue;
+        }
+
+        $driver = $drivers[ intval( $rotation->from_driver_id ) ] ?? null;
+        $rows[] = [
+            $switch_time->format( 'H:i:s' ),
+            $driver ? $driver->driver_name : '',
+            rar_format_export_duration( $switch_time->getTimestamp() - $previous_time->getTimestamp() ),
+        ];
+
+        $previous_time = $switch_time;
+    }
+
+    $end_time = rar_export_datetime( $race->end_time, $timezone );
+    if ( $previous_time && $end_time && $end_time > $previous_time ) {
+        if ( ! empty( $rotations ) ) {
+            $last_rotation = end( $rotations );
+            $driver = $drivers[ intval( $last_rotation->to_driver_id ) ] ?? null;
+        } else {
+            $driver = reset( $drivers );
+        }
+
+        $rows[] = [
+            $end_time->format( 'H:i:s' ),
+            $driver ? $driver->driver_name : '',
+            rar_format_export_duration( $end_time->getTimestamp() - $previous_time->getTimestamp() ),
+        ];
+    }
+
+    return $rows;
+}
+
+function rar_export_datetime( $value, $timezone ) {
+    if ( ! $value ) {
+        return false;
+    }
+
+    try {
+        return new DateTimeImmutable( $value, $timezone );
+    } catch ( Exception $e ) {
+        return false;
+    }
+}
+
+function rar_format_export_duration( $seconds ) {
+    $seconds = max( 0, intval( $seconds ) );
+    $hours = floor( $seconds / HOUR_IN_SECONDS );
+    $minutes = floor( ( $seconds % HOUR_IN_SECONDS ) / MINUTE_IN_SECONDS );
+    $remaining_seconds = $seconds % MINUTE_IN_SECONDS;
+
+    return sprintf( '%02d:%02d:%02d', $hours, $minutes, $remaining_seconds );
 }

@@ -67,8 +67,6 @@ class RAR_Admin_Dashboard {
             'nonce' => wp_create_nonce( 'rar_nonce' ),
             'canEdit' => current_user_can( 'manage_options' ),
             'readOnly' => ! current_user_can( 'manage_options' ),
-            'publicMode' => false,
-            'raceId' => 0,
         ] );
     }
 
