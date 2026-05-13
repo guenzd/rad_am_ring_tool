@@ -84,3 +84,43 @@ To delete the test database and WordPress files:
 ```sh
 docker compose down -v
 ```
+
+## Apple Container CLI
+
+macOS 26 on Apple Silicon can run this project with Apple's `container` CLI, but it is not a Docker Compose replacement. Use this path when you want to run the same WordPress/MariaDB stack through Apple's container runtime.
+
+Install Apple's signed package from:
+
+- https://github.com/apple/container/releases
+
+Then start WordPress:
+
+```sh
+cp .env.example .env
+sh docker/container-start.sh
+```
+
+Install WordPress and activate the plugin:
+
+```sh
+sh docker/container-init-wordpress.sh
+```
+
+Run WP-CLI commands:
+
+```sh
+sh docker/container-wp-cli.sh plugin status rad-am-ring-plugin
+sh docker/container-wp-cli.sh db query 'SHOW TABLES LIKE "%rar%";'
+```
+
+Stop and remove the Apple `container` containers:
+
+```sh
+sh docker/container-stop.sh
+```
+
+Delete the Apple `container` volumes too:
+
+```sh
+sh docker/container-stop.sh --volumes
+```
