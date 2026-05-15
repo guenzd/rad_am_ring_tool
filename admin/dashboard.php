@@ -108,15 +108,21 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <button type="button" id="switchDriverTimeOkBtn" class="rar-btn rar-btn-secondary">OK</button>
                         </div>
                         <div class="rar-switch-actions">
-                            <button id="switchDriverBtn" class="rar-btn rar-btn-secondary">Zum nächsten Fahrer wechseln</button>
+                            <button id="switchDriverBtn" class="rar-btn rar-btn-secondary">Fahrerwechsel</button>
                             <button id="undoSwitchBtn" class="rar-btn">Letzten Fahrerwechsel rückgängig</button>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Rotation Forecast -->
+            <div class="rar-card rar-card-forecast">
+                <h3>Wechsel-Prognose</h3>
+                <div id="swapForecast" class="rar-forecast-list"></div>
+            </div>
+
             <!-- Current Drivers -->
-            <div class="rar-card">
+            <div class="rar-card rar-card-drivers">
                 <h3>Fahrer & Statistiken</h3>
                 <div id="driversList" class="rar-drivers-list"></div>
             </div>
@@ -146,17 +152,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </details>
             </div>
 
-            <!-- Rotation Forecast -->
-            <div class="rar-card rar-card-forecast">
-                <h3>Wechsel-Prognose</h3>
-                <div id="swapForecast" class="rar-forecast-list"></div>
-            </div>
-
             <!-- Driver Switches Log -->
-            <div class="rar-card">
-                <h3>Wechsel-Verlauf</h3>
+            <details class="rar-card rar-collapsible-card rar-card-log">
+                <summary>Wechsel-Verlauf</summary>
                 <div id="switchLog" class="rar-log"></div>
-            </div>
+            </details>
 
             <!-- End Race -->
             <div class="rar-card">

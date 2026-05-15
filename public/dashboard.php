@@ -62,8 +62,8 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
                 <div id="swapForecast" class="rar-forecast-list"><p>Prognose wird geladen...</p></div>
             </div>
 
-            <div class="rar-card">
-                <h3>Wechsel-Verlauf</h3>
+            <details class="rar-card rar-collapsible-card rar-card-log">
+                <summary>Wechsel-Verlauf</summary>
                 <div id="switchLog" class="rar-log">
                     <?php if ( $public_data && ! empty( $public_data['rotations'] ) ) : ?>
                         <?php foreach ( $public_data['rotations'] as $rotation ) : ?>
@@ -76,7 +76,7 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
                         <p>Noch keine Wechsel</p>
                     <?php endif; ?>
                 </div>
-            </div>
+            </details>
         </div>
 
         <div id="publicRaceEmpty" class="rar-card rar-public-empty"<?php echo $public_race ? ' style="display: none;"' : ''; ?>>
