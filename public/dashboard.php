@@ -36,7 +36,22 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
                 <?php endif; ?>
             </div>
 
-            <div class="rar-card">
+            <div class="rar-card rar-card-switch">
+                <h3>Fahrerwechsel</h3>
+                <div class="rar-switch-layout">
+                    <div class="rar-switch-preview-panel">
+                        <div id="nextSwitchPreview" class="rar-switch-preview">Noch keine Fahrerfolge</div>
+                        <div id="nextSwitchTimePreview" class="rar-switch-time-preview">Keine Prognose verfügbar</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rar-card rar-card-forecast">
+                <h3>Wechsel-Prognose</h3>
+                <div id="swapForecast" class="rar-forecast-list"><p>Prognose wird geladen...</p></div>
+            </div>
+
+            <div class="rar-card rar-card-drivers">
                 <h3>Fahrer & Statistiken</h3>
                 <div id="driversList" class="rar-drivers-list">
                     <?php if ( $public_data && ! empty( $public_data['drivers'] ) ) : ?>
@@ -53,13 +68,6 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
                         <p>Noch keine Fahrer</p>
                     <?php endif; ?>
                 </div>
-            </div>
-
-            <div class="rar-card rar-card-forecast">
-                <h3>Fahrerfolge & Wechsel-Prognose</h3>
-                <div id="nextSwitchPreview" class="rar-switch-preview">Noch keine Fahrerfolge</div>
-                <div id="nextSwitchTimePreview" class="rar-switch-time-preview">Keine Prognose verfügbar</div>
-                <div id="swapForecast" class="rar-forecast-list"><p>Prognose wird geladen...</p></div>
             </div>
 
             <details class="rar-card rar-collapsible-card rar-card-log">

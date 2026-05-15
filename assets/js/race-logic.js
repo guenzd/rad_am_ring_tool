@@ -6,56 +6,21 @@
     }
 }(typeof self !== 'undefined' ? self : this, function() {
     function parseRotationSequence(value) {
-        let parts = String(value || '').split('|');
-
-        return {
-            oneTime: parseSequencePart(parts[0] || ''),
-            repeat: parseSequencePart(parts[1] || '')
-        };
-    }
-
-    function parseSequencePart(value) {
         return String(value || '')
             .split(/[\s,]+/)
+            .filter(function(item) {
+                return item !== '';
+            })
             .map(function(item) {
-                return parseInt(item, 10);
+                return Number(item);
             })
             .filter(function(item) {
-                return !Number.isNaN(item);
+                return Number.isInteger(item);
             });
     }
 
-    function serializeRotationSequence(oneTime, repeat) {
-        let oneTimeValue = (oneTime || []).join(',');
-        let repeatValue = (repeat || []).join(',');
-
-        if (oneTimeValue && repeatValue) {
-            return oneTimeValue + ' | ' + repeatValue;
-        }
-
-        if (repeatValue) {
-            return ' | ' + repeatValue;
-        }
-
-        return oneTimeValue;
-    }
-
-    function getRotationCycleLength(sequence, driverCount) {
-        if (sequence.oneTime.length > 0 || sequence.repeat.length > 0) {
-            return sequence.oneTime.length + (sequence.repeat.length || driverCount);
-        }
-
-        return driverCount;
-    }
-
     function getDriverForLap(lapIndex, drivers, sequence) {
-        let driverOrder = null;
-
-        if (sequence.oneTime.length > 0 && lapIndex < sequence.oneTime.length) {
-            driverOrder = sequence.oneTime[lapIndex];
-        } else if (sequence.repeat.length > 0) {
-            driverOrder = sequence.repeat[(lapIndex - sequence.oneTime.length) % sequence.repeat.length];
-        }
+        let driverOrder = sequence[lapIndex] || null;
 
         if (driverOrder !== null) {
             let sequencedDriver = drivers.find(function(driver) {
@@ -89,74 +54,116 @@
     }
 
     function getInferredLapStats(raceData, parseDate) {
-        let stats = {
-            byDriver: {},
-            completedLaps: 0,
-            latestSwitchTime: null
-        };
+        let stats = createEmptyLapStats();
 
         if (!raceData || !raceData.rotations || !raceData.race) {
             return stats;
         }
 
-        let previousTime = parseDate(raceData.race.start_time);
-        let firstLapExtra = parseFloat(raceData.race.first_lap_extra_time || 0);
+        let context = {
+            drivers: raceData.drivers || [],
+            firstLapExtra: parseFloat(raceData.race.first_lap_extra_time || 0),
+            previousTime: parseDate(raceData.race.start_time)
+        };
         let rotations = getOrderedRotations(raceData, parseDate);
 
         rotations.forEach(function(rotation, index) {
-            let switchTime = parseDate(rotation.switched_at);
-            let driverId = String(rotation.from_driver_id);
-
-            if (!driverId) {
-                return;
-            }
-
-            if (!stats.byDriver[driverId]) {
-                stats.byDriver[driverId] = {
-                    count: 0,
-                    total: 0,
-                    laps: [],
-                    recentAverage: null
-                };
-            }
-
-            stats.byDriver[driverId].count++;
-            stats.completedLaps++;
-
-            let lapSeconds = null;
-            let hasValidTimeRange = switchTime && previousTime && switchTime.getTime() > previousTime.getTime();
-
-            if (hasValidTimeRange) {
-                lapSeconds = (switchTime.getTime() - previousTime.getTime()) / 1000;
-
-                if (index === 0) {
-                    lapSeconds = Math.max(1, lapSeconds - firstLapExtra);
-                }
-            } else {
-                let driver = getDriverById(raceData.drivers, driverId);
-                let fallbackLapSeconds = driver ? parseFloat(driver.avg_lap_time || 0) : 0;
-
-                if (fallbackLapSeconds > 0) {
-                    lapSeconds = fallbackLapSeconds;
-                }
-            }
-
-            if (lapSeconds) {
-                stats.byDriver[driverId].total += lapSeconds;
-                stats.byDriver[driverId].laps.push(lapSeconds);
-                stats.byDriver[driverId].laps = stats.byDriver[driverId].laps.slice(-3);
-                stats.byDriver[driverId].recentAverage = stats.byDriver[driverId].laps.reduce(function(sum, value) {
-                    return sum + value;
-                }, 0) / stats.byDriver[driverId].laps.length;
-
-                if (hasValidTimeRange) {
-                    stats.latestSwitchTime = switchTime;
-                    previousTime = switchTime;
-                }
-            }
+            addRotationLapStats(stats, context, rotation, index, parseDate);
         });
 
         return stats;
+    }
+
+    function createEmptyLapStats() {
+        return {
+            byDriver: {},
+            completedLaps: 0,
+            latestSwitchTime: null
+        };
+    }
+
+    function createDriverLapStats() {
+        return {
+            count: 0,
+            total: 0,
+            laps: [],
+            recentAverage: null
+        };
+    }
+
+    function getDriverLapStats(stats, driverId) {
+        if (!stats.byDriver[driverId]) {
+            stats.byDriver[driverId] = createDriverLapStats();
+        }
+
+        return stats.byDriver[driverId];
+    }
+
+    function addRotationLapStats(stats, context, rotation, rotationIndex, parseDate) {
+        let switchTime = parseDate(rotation.switched_at);
+        let driverId = String(rotation.from_driver_id);
+
+        if (!driverId) {
+            return;
+        }
+
+        let driverStats = getDriverLapStats(stats, driverId);
+        let lapResult = getRotationLapSeconds(context, driverId, switchTime, rotationIndex);
+
+        driverStats.count++;
+        stats.completedLaps++;
+
+        if (!lapResult.lapSeconds) {
+            return;
+        }
+
+        addDriverLapSeconds(driverStats, lapResult.lapSeconds);
+
+        if (lapResult.hasValidTimeRange) {
+            stats.latestSwitchTime = switchTime;
+            context.previousTime = switchTime;
+        }
+    }
+
+    function getRotationLapSeconds(context, driverId, switchTime, rotationIndex) {
+        let hasValidTimeRange = switchTime && context.previousTime && switchTime.getTime() > context.previousTime.getTime();
+
+        return {
+            hasValidTimeRange: hasValidTimeRange,
+            lapSeconds: hasValidTimeRange
+                ? getTimedLapSeconds(context.previousTime, switchTime, rotationIndex, context.firstLapExtra)
+                : getFallbackLapSeconds(context.drivers, driverId)
+        };
+    }
+
+    function getTimedLapSeconds(previousTime, switchTime, rotationIndex, firstLapExtra) {
+        let lapSeconds = (switchTime.getTime() - previousTime.getTime()) / 1000;
+
+        if (rotationIndex === 0) {
+            return Math.max(1, lapSeconds - firstLapExtra);
+        }
+
+        return lapSeconds;
+    }
+
+    function getFallbackLapSeconds(drivers, driverId) {
+        let driver = getDriverById(drivers, driverId);
+        let fallbackLapSeconds = driver ? parseFloat(driver.avg_lap_time || 0) : 0;
+
+        return fallbackLapSeconds > 0 ? fallbackLapSeconds : null;
+    }
+
+    function addDriverLapSeconds(driverStats, lapSeconds) {
+        driverStats.total += lapSeconds;
+        driverStats.laps.push(lapSeconds);
+        driverStats.laps = driverStats.laps.slice(-3);
+        driverStats.recentAverage = getAverage(driverStats.laps);
+    }
+
+    function getAverage(values) {
+        return values.reduce(function(sum, value) {
+            return sum + value;
+        }, 0) / values.length;
     }
 
     function getForecastLapSeconds(driver, lapStats) {
@@ -197,35 +204,6 @@
     }
 
     function getNextQueuedDriver(drivers, fromDriver, completedLaps, sequence) {
-        if (!fromDriver) {
-            return getNextDifferentDriver(drivers, completedLaps + 1, fromDriver, sequence);
-        }
-
-        let currentAtLapCount = getDriverForLap(completedLaps, drivers, sequence);
-
-        if (currentAtLapCount && parseInt(currentAtLapCount.id, 10) === parseInt(fromDriver.id, 10)) {
-            return getNextDifferentDriver(drivers, completedLaps + 1, fromDriver, sequence);
-        }
-
-        let searchLimit = Math.max(getRotationCycleLength(sequence, drivers.length) * 2, drivers.length + 20);
-
-        for (let offset = 1; offset <= searchLimit; offset++) {
-            let lapIndex = completedLaps + offset;
-            let candidate = getDriverForLap(lapIndex, drivers, sequence);
-
-            if (candidate && parseInt(candidate.id, 10) === parseInt(fromDriver.id, 10)) {
-                return getNextDifferentDriver(drivers, lapIndex + 1, fromDriver, sequence);
-            }
-        }
-
-        for (let lapIndex = Math.max(0, completedLaps - searchLimit); lapIndex < completedLaps; lapIndex++) {
-            let candidate = getDriverForLap(lapIndex, drivers, sequence);
-
-            if (candidate && parseInt(candidate.id, 10) === parseInt(fromDriver.id, 10)) {
-                return getNextDifferentDriver(drivers, lapIndex + 1, fromDriver, sequence);
-            }
-        }
-
         return getNextDifferentDriver(drivers, completedLaps + 1, fromDriver, sequence);
     }
 
@@ -262,44 +240,66 @@
         let sequence = parseRotationSequence(rotationSequenceValue);
         let lapStats = getInferredLapStats(raceData, parseDate);
         let firstLapExtra = parseFloat(raceData.race.first_lap_extra_time || 0);
-        let projectedTime = new Date(startTime.getTime());
-        let laps = 0;
-        let lastCrossingTime = new Date(startTime.getTime());
+        let baseTime = lapStats.latestSwitchTime || startTime;
+        let projectedTime = new Date(baseTime.getTime());
+        let laps = lapStats.completedLaps;
+        let lastCrossingTime = new Date(baseTime.getTime());
 
-        for (let lapIndex = 0; lapIndex < 2000; lapIndex++) {
-            let driver = getDriverForLap(lapIndex, raceData.drivers, sequence);
+        for (let lapIndex = lapStats.completedLaps; lapIndex < 2000; lapIndex++) {
+            let lap = getProjectedLap(raceData.drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, plannedEndTime);
 
-            if (!driver) {
+            if (!lap) {
                 break;
             }
 
-            let lapSeconds = getForecastLapSeconds(driver, lapStats);
-
-            if (lapIndex === 0) {
-                lapSeconds += firstLapExtra;
-            }
-
-            let normalCrossingTime = new Date(projectedTime.getTime() + (lapSeconds * 1000));
-            let isFinalLap = normalCrossingTime.getTime() >= plannedEndTime.getTime();
-
-            if (isFinalLap) {
-                let finalLapSeconds = Math.max(1, lapSeconds - firstLapExtra);
-                let finalCrossingTime = new Date(projectedTime.getTime() + (finalLapSeconds * 1000));
-
-                if (finalCrossingTime.getTime() > plannedEndTime.getTime()) {
-                    break;
-                }
-
-                laps++;
-                lastCrossingTime = finalCrossingTime;
+            if (!lap.canCount) {
                 break;
             }
 
-            projectedTime = normalCrossingTime;
-            lastCrossingTime = normalCrossingTime;
             laps++;
+            projectedTime = lap.crossingTime;
+            lastCrossingTime = lap.crossingTime;
+
+            if (lap.isFinal) {
+                break;
+            }
         }
 
+        return buildLapPrognosisResult(laps, plannedEndTime, lastCrossingTime);
+    }
+
+    function getProjectedLap(drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, plannedEndTime) {
+        let driver = getDriverForLap(lapIndex, drivers, sequence);
+
+        if (!driver) {
+            return null;
+        }
+
+        let lapSeconds = getForecastLapSeconds(driver, lapStats) + (lapIndex === 0 ? firstLapExtra : 0);
+        let crossingTime = addSeconds(projectedTime, lapSeconds);
+
+        if (crossingTime.getTime() < plannedEndTime.getTime()) {
+            return {
+                canCount: true,
+                crossingTime: crossingTime,
+                isFinal: false
+            };
+        }
+
+        let finalCrossingTime = addSeconds(projectedTime, Math.max(1, lapSeconds - firstLapExtra));
+
+        return {
+            canCount: finalCrossingTime.getTime() <= plannedEndTime.getTime(),
+            crossingTime: finalCrossingTime,
+            isFinal: true
+        };
+    }
+
+    function addSeconds(date, seconds) {
+        return new Date(date.getTime() + (seconds * 1000));
+    }
+
+    function buildLapPrognosisResult(laps, plannedEndTime, lastCrossingTime) {
         return {
             laps: laps,
             bufferMinutes: Math.floor((plannedEndTime.getTime() - lastCrossingTime.getTime()) / 60000)
@@ -313,9 +313,6 @@
         getInferredLapStats: getInferredLapStats,
         getNextSwitchDrivers: getNextSwitchDrivers,
         getOrderedRotations: getOrderedRotations,
-        getRotationCycleLength: getRotationCycleLength,
-        parseRotationSequence: parseRotationSequence,
-        parseSequencePart: parseSequencePart,
-        serializeRotationSequence: serializeRotationSequence
+        parseRotationSequence: parseRotationSequence
     };
 }));

@@ -58,7 +58,13 @@ See `TESTING.md` for an explanation of the covered cases.
 
 ## Public Race Page
 
-The plugin creates a public page automatically:
+The plugin creates a public page automatically. In the local Docker/Apple Container
+environment WordPress usually runs without pretty permalinks, so use the `page_id`
+URL:
+
+- http://localhost:8080/?page_id=4
+
+If pretty permalinks are enabled, the same page is also available at:
 
 - http://localhost:8080/rad-am-ring-live/
 

@@ -10,10 +10,7 @@ jQuery(document).ready(function($) {
     let canEdit = !!(window.rarData && window.rarData.canEdit);
     let publicView = $('.rar-public-container').length > 0;
     let focusedDriverOrder = null;
-    let queueEditorState = {
-        oneTime: [],
-        repeat: []
-    };
+    let queueEditorState = [];
     let skippedForecastLapIndexes = {};
 
     // Load all races on startup
@@ -480,14 +477,7 @@ jQuery(document).ready(function($) {
 
         if (item.hasClass('rar-editor-forecast-item')) {
             removeEditorForecastStint(parseInt(item.data('source-lap'), 10));
-            return;
         }
-
-        let queueName = item.data('queue');
-        let index = parseInt(item.data('index'), 10);
-
-        queueEditorState[queueName].splice(index, 1);
-        syncRotationEditor();
     });
 
     $(document).on('click', '.rar-queue-move', function(event) {
@@ -506,14 +496,7 @@ jQuery(document).ready(function($) {
                 sourceLapIndex,
                 direction === 'up' ? sourceLapIndex - 1 : sourceLapIndex + 1
             );
-            return;
         }
-
-        let queueName = item.data('queue');
-        let index = parseInt(item.data('index'), 10);
-        let targetIndex = direction === 'up' ? index - 1 : index + 1;
-
-        moveQueueItem(queueName, index, targetIndex);
     });
 
     $(document).on('dragstart', '.rar-queue-driver-chip', function(event) {
@@ -537,7 +520,6 @@ jQuery(document).ready(function($) {
 
         event.originalEvent.dataTransfer.setData('text/plain', JSON.stringify({
             type: 'queueItem',
-            queue: $(this).data('queue'),
             index: $(this).data('index'),
             sourceLap: $(this).data('source-lap'),
             driverOrder: $(this).data('driver-order')
@@ -1088,10 +1070,6 @@ jQuery(document).ready(function($) {
         return { className: 'low', label: 'grob ' + score + '%' };
     }
 
-    function getRotationCycleLength(sequence, driverCount) {
-        return RARRaceLogic.getRotationCycleLength(sequence, driverCount);
-    }
-
     function parseRotationSequence(value) {
         return RARRaceLogic.parseRotationSequence(value);
     }
@@ -1103,10 +1081,7 @@ jQuery(document).ready(function($) {
     function renderRotationEditor() {
         let sequence = parseRotationSequence($('#rotationSequence').val());
 
-        queueEditorState = {
-            oneTime: expandEditorSequence(sequence),
-            repeat: []
-        };
+        queueEditorState = expandEditorSequence(sequence);
 
         renderQueueDriverButtons();
         renderQueueLists();
@@ -1141,9 +1116,9 @@ jQuery(document).ready(function($) {
         let html = '';
         let forecastItems = [];
 
-        if (queueEditorState.oneTime.length) {
+        if (queueEditorState.length) {
             forecastItems = (buildForecastItems(getEditorSequence()) || []).filter(function(item) {
-                return item.sourceLapIndex < queueEditorState.oneTime.length;
+                return item.sourceLapIndex < queueEditorState.length;
             });
         }
 
@@ -1172,88 +1147,21 @@ jQuery(document).ready(function($) {
     }
 
     function serializeRotationEditor() {
-        return RARRaceLogic.serializeRotationSequence(queueEditorState.oneTime, []);
+        return queueEditorState.join(',');
     }
 
     function getEditorSequence() {
-        return {
-            oneTime: queueEditorState.oneTime.slice(),
-            repeat: []
-        };
+        return queueEditorState.slice();
     }
 
     function expandEditorSequence(sequence) {
-        let flatSequence = sequence.oneTime.slice();
-
-        if (!sequence.repeat.length) {
-            return flatSequence;
-        }
-
-        let forecastItems = buildForecastItems(sequence) || [];
-        let lastItem = forecastItems.length ? forecastItems[forecastItems.length - 1] : null;
-        let targetLength = lastItem && !Number.isNaN(parseInt(lastItem.sourceLapIndex, 10))
-            ? parseInt(lastItem.sourceLapIndex, 10) + 1
-            : sequence.oneTime.length + sequence.repeat.length;
-
-        while (flatSequence.length < targetLength) {
-            flatSequence.push(getDriverOrderForLap(flatSequence.length, sequence));
-        }
-
-        return flatSequence.filter(function(driverOrder) {
+        return sequence.filter(function(driverOrder) {
             return !Number.isNaN(driverOrder);
         });
     }
 
     function clearAllQueues() {
-        queueEditorState = {
-            oneTime: [],
-            repeat: []
-        };
-        syncRotationEditor();
-    }
-
-    function moveQueueItem(sourceQueue, sourceIndex, targetIndex, targetQueue) {
-        targetQueue = targetQueue || sourceQueue;
-
-        if (
-            Number.isNaN(sourceIndex) ||
-            Number.isNaN(targetIndex) ||
-            !queueEditorState[sourceQueue] ||
-            !queueEditorState[targetQueue] ||
-            sourceIndex < 0 ||
-            sourceIndex >= queueEditorState[sourceQueue].length
-        ) {
-            return;
-        }
-
-        let item = queueEditorState[sourceQueue].splice(sourceIndex, 1)[0];
-
-        if (sourceQueue === targetQueue && targetIndex > sourceIndex) {
-            targetIndex--;
-        }
-
-        targetIndex = Math.max(0, Math.min(targetIndex, queueEditorState[targetQueue].length));
-        queueEditorState[targetQueue].splice(targetIndex, 0, item);
-        syncRotationEditor();
-    }
-
-    function insertQueueItems(queueName, targetIndex, items) {
-        if (!queueEditorState[queueName] || !Array.isArray(items)) {
-            return;
-        }
-
-        items = items.filter(function(item) {
-            return !Number.isNaN(parseInt(item, 10));
-        }).map(function(item) {
-            return parseInt(item, 10);
-        });
-
-        if (!items.length) {
-            return;
-        }
-
-        targetIndex = Math.max(0, Math.min(targetIndex, queueEditorState[queueName].length));
-        queueEditorState[queueName].splice.apply(queueEditorState[queueName], [targetIndex, 0].concat(items));
+        queueEditorState = [];
         syncRotationEditor();
     }
 
@@ -1277,10 +1185,10 @@ jQuery(document).ready(function($) {
         }
 
         ensureEditorLength(sourceLapIndex + 1);
-        let oneTime = queueEditorState.oneTime.slice();
+        let queue = queueEditorState.slice();
 
-        oneTime.splice(sourceLapIndex, 1);
-        applyEditorSequence(oneTime);
+        queue.splice(sourceLapIndex, 1);
+        applyEditorSequence(queue);
     }
 
     function moveEditorForecastStint(sourceLapIndex, targetLapIndex) {
@@ -1299,12 +1207,12 @@ jQuery(document).ready(function($) {
         }
 
         ensureEditorLength(Math.max(sourceLapIndex, targetLapIndex) + 1);
-        let oneTime = queueEditorState.oneTime.slice();
-        let movedDriverOrder = oneTime.splice(sourceLapIndex, 1)[0];
-        let adjustedTargetIndex = Math.min(targetLapIndex, oneTime.length);
+        let queue = queueEditorState.slice();
+        let movedDriverOrder = queue.splice(sourceLapIndex, 1)[0];
+        let adjustedTargetIndex = Math.min(targetLapIndex, queue.length);
 
-        oneTime.splice(adjustedTargetIndex, 0, movedDriverOrder);
-        applyEditorSequence(oneTime);
+        queue.splice(adjustedTargetIndex, 0, movedDriverOrder);
+        applyEditorSequence(queue);
     }
 
     function insertEditorForecastStint(driverOrder, targetLapIndex) {
@@ -1315,33 +1223,30 @@ jQuery(document).ready(function($) {
         }
 
         ensureEditorLength(targetLapIndex);
-        let oneTime = queueEditorState.oneTime.slice();
+        let queue = queueEditorState.slice();
 
-        oneTime.splice(targetLapIndex, 0, driverOrder);
-        applyEditorSequence(oneTime);
+        queue.splice(targetLapIndex, 0, driverOrder);
+        applyEditorSequence(queue);
     }
 
     function getEditorAppendLapIndex() {
         let completedLaps = getInferredLapStats().completedLaps;
-        return Math.max(completedLaps + 1, queueEditorState.oneTime.length);
+        return Math.max(completedLaps + 1, queueEditorState.length);
     }
 
     function ensureEditorLength(length) {
         let sequence = getEditorSequence();
 
-        while (queueEditorState.oneTime.length < length) {
-            queueEditorState.oneTime.push(getDriverOrderForLap(queueEditorState.oneTime.length, sequence));
-            sequence.oneTime = queueEditorState.oneTime.slice();
+        while (queueEditorState.length < length) {
+            queueEditorState.push(getDriverOrderForLap(queueEditorState.length, sequence));
+            sequence = queueEditorState.slice();
         }
     }
 
-    function applyEditorSequence(oneTime) {
-        queueEditorState = {
-            oneTime: oneTime.filter(function(driverOrder) {
-                return !Number.isNaN(driverOrder);
-            }),
-            repeat: []
-        };
+    function applyEditorSequence(queue) {
+        queueEditorState = queue.filter(function(driverOrder) {
+            return !Number.isNaN(driverOrder);
+        });
 
         syncRotationEditor();
     }
@@ -1612,7 +1517,8 @@ jQuery(document).ready(function($) {
         }
 
         let projectedTime = new Date(baseTime.getTime());
-        let forecastCount = plannedEndTime ? 2000 : Math.max(getRotationCycleLength(sequence, raceData.drivers.length) * 3, 16);
+        let queueLength = sequence.length || raceData.drivers.length;
+        let forecastCount = plannedEndTime ? 2000 : Math.max(queueLength * 3, 16);
         let forecastItems = [];
         let forecastLapsByDriver = {};
 
@@ -1656,17 +1562,6 @@ jQuery(document).ready(function($) {
 
             projectedTime = new Date(projectedTime.getTime() + (lapSeconds * 1000));
 
-            let queueName = null;
-            let queueIndex = null;
-
-            if (sequence.oneTime.length > 0 && lapIndex < sequence.oneTime.length) {
-                queueName = 'oneTime';
-                queueIndex = lapIndex;
-            } else if (sequence.repeat.length > 0) {
-                queueName = 'repeat';
-                queueIndex = (lapIndex - sequence.oneTime.length) % sequence.repeat.length;
-            }
-
             forecastItems.push({
                 driver: driver,
                 sourceLapIndex: lapIndex,
@@ -1675,8 +1570,7 @@ jQuery(document).ready(function($) {
                 time: projectedTime,
                 isCurrent: forecastItems.length === 0,
                 isFinal: isFinalLap,
-                queueName: queueName,
-                queueIndex: queueIndex
+                queueIndex: lapIndex < sequence.length ? lapIndex : null
             });
 
             if (isFinalLap) {
@@ -1687,7 +1581,7 @@ jQuery(document).ready(function($) {
         return forecastItems;
     }
 
-    function renderForecastItem(item, isLast, isEditable, queueName) {
+    function renderForecastItem(item, isLast, isEditable) {
         let classes = 'rar-forecast-item ' + getDriverColorClass(item.driver) +
             (item.isCurrent ? ' is-current' : '') +
             (item.isFinal ? ' is-final' : '') +
@@ -1699,10 +1593,10 @@ jQuery(document).ready(function($) {
         let canMoveUp = isEditableFutureStint && item.sourceLapIndex > completedLaps + 1;
         let canMoveDown = isEditableFutureStint;
         let canRemoveEditorStint = isEditableFutureStint;
-        let canRemove = !item.isCurrent && item.sourceLapIndex !== null && item.sourceLapIndex !== undefined;
+        let canRemove = canEdit && !item.isCurrent && item.sourceLapIndex !== null && item.sourceLapIndex !== undefined;
 
         if (isEditableFutureStint) {
-            attrs += ' draggable="true" data-queue="' + item.queueName + '" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '"';
+            attrs += ' draggable="true" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '"';
         }
 
         let lapNumber = item.sourceLapIndex !== null && item.sourceLapIndex !== undefined
@@ -1719,7 +1613,7 @@ jQuery(document).ready(function($) {
                 (isLast ? '<span class="rar-forecast-last-badge">Letzter Fahrer</span>' : '') +
                 (canMoveUp ? '<button type="button" class="rar-mini-icon rar-queue-move" data-direction="up">↑</button>' : '') +
                 (canMoveDown ? '<button type="button" class="rar-mini-icon rar-queue-move" data-direction="down">↓</button>' : '') +
-                (canRemoveEditorStint || (!isEditable && canRemove) ? '<button type="button" class="' + (isEditable ? 'rar-mini-icon rar-queue-remove' : 'rar-forecast-remove') + '" data-driver-order="' + item.driver.driver_order + '" data-queue="' + item.queueName + '" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '" aria-label="Stint aus Folge entfernen">-</button>' : '') +
+                (canRemoveEditorStint || (!isEditable && canRemove) ? '<button type="button" class="' + (isEditable ? 'rar-mini-icon rar-queue-remove' : 'rar-forecast-remove') + '" data-driver-order="' + item.driver.driver_order + '" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '" aria-label="Stint aus Folge entfernen">-</button>' : '') +
             '</div>' +
             '<div class="rar-forecast-meta">' +
                 '<span>' + (item.isFinal ? 'Zielrunde ' : '') + formatTime(item.time) + '</span>' +

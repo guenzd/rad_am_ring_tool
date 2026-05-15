@@ -28,6 +28,23 @@ Rad am Ring is a WordPress plugin designed to track drivers and lap times during
 4. Navigate to "Rad am Ring" in the admin menu
 5. Create a new race and start tracking!
 
+== Public Dashboard ==
+
+The plugin creates a public read-only dashboard page for blog readers:
+
+`https://your-domain.example/rad-am-ring-live/`
+
+On the live site this is:
+
+`https://www.dgd-racing-team.de/rad-am-ring-live/`
+
+In the local container environment, use the non-pretty WordPress page URL unless
+permalinks are enabled:
+
+`http://localhost:8080/?page_id=4`
+
+The page uses the `[rad_am_ring_public]` shortcode and is created automatically on plugin activation. Readers can view the live race dashboard there, but editing remains limited to WordPress admins.
+
 == Quick Start ==
 
 1. **Create a Race**: Enter a race name and click "Start New Race"

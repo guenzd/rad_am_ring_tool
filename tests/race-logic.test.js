@@ -43,53 +43,21 @@ function switchPair(data, sequence) {
     return result ? `${result.from.driver_order}->${result.to.driver_order}` : null;
 }
 
-test('parses one-time and repeat queues separated by pipe', () => {
-    assert.deepEqual(logic.parseRotationSequence('1,2,1,2 | 1,2,3,4'), {
-        oneTime: [1, 2, 1, 2],
-        repeat: [1, 2, 3, 4]
-    });
-});
-
-test('parses whitespace and comma separated entries', () => {
-    assert.deepEqual(logic.parseRotationSequence('1 2, 3\n4 | 2 4'), {
-        oneTime: [1, 2, 3, 4],
-        repeat: [2, 4]
-    });
+test('parses whitespace and comma separated queue entries', () => {
+    assert.deepEqual(logic.parseRotationSequence('1 2, 3\n4, 2 4'), [1, 2, 3, 4, 2, 4]);
 });
 
 test('ignores invalid queue tokens', () => {
-    assert.deepEqual(logic.parseRotationSequence('1,abc,2 | nope,4').oneTime, [1, 2]);
-    assert.deepEqual(logic.parseRotationSequence('1,abc,2 | nope,4').repeat, [4]);
+    assert.deepEqual(logic.parseRotationSequence('1,abc,2 nope,4'), [1, 2, 4]);
 });
 
-test('serializes one-time only queue', () => {
-    assert.equal(logic.serializeRotationSequence([1, 2, 3], []), '1,2,3');
-});
-
-test('serializes repeat only queue with leading pipe', () => {
-    assert.equal(logic.serializeRotationSequence([], [1, 2, 3, 4]), ' | 1,2,3,4');
-});
-
-test('serializes combined one-time and repeat queue', () => {
-    assert.equal(logic.serializeRotationSequence([1, 2, 1, 2], [1, 2, 3, 4]), '1,2,1,2 | 1,2,3,4');
-});
-
-test('uses one-time queue before repeat queue', () => {
-    const sequence = logic.parseRotationSequence('1,2,1,2 | 3,4');
+test('uses the flat queue before falling back to driver order', () => {
+    const sequence = logic.parseRotationSequence('1,2,1,2,3,4');
     const result = Array.from({ length: 8 }, (_, index) => {
         return logic.getDriverForLap(index, drivers(), sequence).driver_order;
     });
 
     assert.deepEqual(result, [1, 2, 1, 2, 3, 4, 3, 4]);
-});
-
-test('uses repeat-only queue from the first lap', () => {
-    const sequence = logic.parseRotationSequence(' | 3,4,1,2');
-    const result = Array.from({ length: 6 }, (_, index) => {
-        return logic.getDriverForLap(index, drivers(), sequence).driver_order;
-    });
-
-    assert.deepEqual(result, [3, 4, 1, 2, 3, 4]);
 });
 
 test('falls back to driver order when no queue is configured', () => {
@@ -102,14 +70,14 @@ test('falls back to driver order when no queue is configured', () => {
 });
 
 test('falls back to natural driver order for unknown queue numbers', () => {
-    const sequence = logic.parseRotationSequence('99 | 88');
+    const sequence = logic.parseRotationSequence('99,88');
 
     assert.equal(logic.getDriverForLap(0, drivers(), sequence).driver_order, 1);
     assert.equal(logic.getDriverForLap(1, drivers(), sequence).driver_order, 2);
 });
 
 test('first driver change starts with first to second queue entry', () => {
-    assert.equal(switchPair(raceData(), '1,2,1,2 | 1,2,3,4'), '1->2');
+    assert.equal(switchPair(raceData(), '1,2,1,2,1,2,3,4'), '1->2');
 });
 
 test('next driver is based on latest recorded switch target', () => {
@@ -124,7 +92,7 @@ test('next driver is based on latest recorded switch target', () => {
         ]
     });
 
-    assert.equal(switchPair(data, '1,2,1,2 | 1,2,3,4'), '2->1');
+    assert.equal(switchPair(data, '1,2,1,2,1,2,3,4'), '2->1');
 });
 
 test('multiple switches continue through the queue', () => {
@@ -136,10 +104,10 @@ test('multiple switches continue through the queue', () => {
         ]
     });
 
-    assert.equal(switchPair(data, '1,2,1,2 | 1,2,3,4'), '2->1');
+    assert.equal(switchPair(data, '1,2,1,2,1,2,3,4'), '2->1');
 });
 
-test('reordered queue is respected after the race has already started', () => {
+test('flat queue is respected after the race has already started', () => {
     const data = raceData({
         rotations: [
             { id: 1, from_driver_id: 1, to_driver_id: 2, switched_at: '2026-05-01 10:52:00' },
@@ -148,7 +116,7 @@ test('reordered queue is respected after the race has already started', () => {
         ]
     });
 
-    assert.equal(switchPair(data, ' | 3,4,1,2'), '4->1');
+    assert.equal(switchPair(data, '1,2,3,4,3,4,1,2'), '4->3');
 });
 
 test('queue reordering can intentionally change the next driver', () => {
@@ -160,7 +128,7 @@ test('queue reordering can intentionally change the next driver', () => {
         ]
     });
 
-    assert.equal(switchPair(data, '4,3,2,1 | 4,3,2,1'), '4->3');
+    assert.equal(switchPair(data, '4,3,2,1,4,3,2,1'), '4->3');
 });
 
 test('does not switch from a driver to the same driver when queue contains duplicates', () => {
@@ -170,7 +138,7 @@ test('does not switch from a driver to the same driver when queue contains dupli
         ]
     });
 
-    assert.equal(switchPair(data, '1,2,2,2,3 | 1,2,3,4'), '2->3');
+    assert.equal(switchPair(data, '1,2,2,2,3,1,2,3,4'), '2->3');
 });
 
 test('returns null when fewer than two drivers exist', () => {
@@ -191,6 +159,14 @@ test('sorts rotations by switch time and then id', () => {
     assert.deepEqual(logic.getOrderedRotations(data, parseDate).map((rotation) => rotation.id), [1, 2, 3]);
 });
 
+test('returns empty lap stats when race data is missing', () => {
+    assert.deepEqual(logic.getInferredLapStats(null, parseDate), {
+        byDriver: {},
+        completedLaps: 0,
+        latestSwitchTime: null
+    });
+});
+
 test('infers lap durations from driver switches', () => {
     const data = raceData({
         race: { first_lap_extra_time: 0 },
@@ -205,6 +181,7 @@ test('infers lap durations from driver switches', () => {
     assert.equal(stats.completedLaps, 2);
     assert.equal(stats.byDriver['1'].recentAverage, 45 * 60);
     assert.equal(stats.byDriver['2'].recentAverage, 45 * 60);
+    assert.equal(stats.latestSwitchTime.getTime(), parseDate('2026-05-01 11:30:00').getTime());
 });
 
 test('falls back to planned lap time when switch timing is inconsistent', () => {
@@ -220,6 +197,45 @@ test('falls back to planned lap time when switch timing is inconsistent', () => 
     assert.equal(stats.completedLaps, 1);
     assert.equal(stats.byDriver['1'].count, 1);
     assert.equal(stats.byDriver['1'].recentAverage, 45 * 60);
+    assert.equal(stats.latestSwitchTime, null);
+});
+
+test('does not infer lap duration when switch timing and planned lap time are missing', () => {
+    const data = raceData({
+        drivers: drivers().map((driver) => {
+            return {
+                ...driver,
+                avg_lap_time: driver.id === 1 ? 0 : driver.avg_lap_time
+            };
+        }),
+        rotations: [
+            { id: 1, from_driver_id: 1, to_driver_id: 2, switched_at: '2026-05-01 09:55:00' }
+        ]
+    });
+
+    const stats = logic.getInferredLapStats(data, parseDate);
+
+    assert.equal(stats.completedLaps, 1);
+    assert.equal(stats.byDriver['1'].count, 1);
+    assert.equal(stats.byDriver['1'].total, 0);
+    assert.deepEqual(stats.byDriver['1'].laps, []);
+    assert.equal(stats.byDriver['1'].recentAverage, null);
+});
+
+test('invalid switch timing does not advance the next timed lap baseline', () => {
+    const data = raceData({
+        race: { start_time: '2026-05-01 10:00:00' },
+        rotations: [
+            { id: 1, from_driver_id: 1, to_driver_id: 2, switched_at: '2026-05-01 09:55:00' },
+            { id: 2, from_driver_id: 2, to_driver_id: 3, switched_at: '2026-05-01 10:45:00' }
+        ]
+    });
+
+    const stats = logic.getInferredLapStats(data, parseDate);
+
+    assert.equal(stats.byDriver['1'].recentAverage, 45 * 60);
+    assert.equal(stats.byDriver['2'].recentAverage, 45 * 60);
+    assert.equal(stats.latestSwitchTime.getTime(), parseDate('2026-05-01 10:45:00').getTime());
 });
 
 test('deducts first lap extra time from the first inferred lap', () => {
@@ -320,6 +336,28 @@ test('final lap is rejected when it still misses cutoff after delta reduction', 
 
     assert.equal(prognosis.laps, 1);
     assert.equal(prognosis.bufferMinutes, 37);
+});
+
+test('lap prognosis starts from completed laps and latest real switch time', () => {
+    const data = raceData({
+        race: {
+            start_time: '2026-05-01 10:00:00',
+            planned_end_time: '2026-05-01 12:25:00',
+            first_lap_extra_time: 0
+        },
+        drivers: drivers(1),
+        rotations: [
+            { id: 1, from_driver_id: 1, to_driver_id: 1, switched_at: '2026-05-01 10:10:00' },
+            { id: 2, from_driver_id: 1, to_driver_id: 1, switched_at: '2026-05-01 10:30:00' },
+            { id: 3, from_driver_id: 1, to_driver_id: 1, switched_at: '2026-05-01 11:00:00' },
+            { id: 4, from_driver_id: 1, to_driver_id: 1, switched_at: '2026-05-01 12:20:00' }
+        ]
+    });
+
+    const prognosis = logic.calculateLapPrognosis(data, '1,1,1,1,1', parseDate);
+
+    assert.equal(prognosis.laps, 4);
+    assert.equal(prognosis.bufferMinutes, 5);
 });
 
 test('lap prognosis returns null for invalid race times', () => {

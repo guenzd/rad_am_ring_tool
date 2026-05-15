@@ -39,9 +39,17 @@
 }
 
 .rar-public-container {
+    position: relative;
+    width: 100vw;
+    max-width: none;
     min-height: 0;
-    margin: 0 auto;
-    padding: 0;
+    margin: 16px calc(50% - 50vw) 32px;
+    padding: 0 clamp(16px, 2vw, 40px);
+}
+
+body:has(.rar-public-container) .entry-title,
+body:has(.rar-public-container) .wp-block-post-title {
+    display: none;
 }
 
 .rar-content {
@@ -106,17 +114,6 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(280px, 1fr));
     gap: 18px;
-}
-
-.rar-section > h2 {
-    grid-column: 1 / -1;
-    margin: 4px 0 0;
-    padding: 0 0 12px;
-    color: #111111;
-    border-bottom: 4px solid #111111;
-    font-size: 28px;
-    font-weight: 800;
-    line-height: 1.15;
 }
 
 .rar-race-title-row {
@@ -302,10 +299,6 @@
     content: "-";
 }
 
-.rar-collapsible-card .rar-form-group {
-    padding: 0 18px 18px;
-}
-
 .rar-collapsible-card .rar-log {
     margin: 0 18px 18px;
 }
@@ -316,10 +309,6 @@
 
 .rar-card-sequence-edit {
     border-top-color: var(--rar-secondary);
-}
-
-.rar-public-section .rar-card-forecast {
-    grid-column: 1 / -1;
 }
 
 .rar-card-switch {
@@ -721,29 +710,6 @@
     gap: 12px;
 }
 
-.rar-queue-pattern {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-    align-items: end;
-    padding: 10px;
-    background: var(--rar-surface-soft);
-    border: 1px solid var(--rar-border);
-}
-
-.rar-queue-pattern > summary {
-    grid-column: 1 / -1;
-    cursor: pointer;
-    color: var(--rar-primary);
-    font-size: 13px;
-    font-weight: 900;
-    text-transform: uppercase;
-}
-
-.rar-queue-pattern:not([open]) {
-    display: block;
-}
-
 .rar-queue-preview,
 .rar-queue-add {
     min-width: 0;
@@ -778,15 +744,6 @@
 
 .rar-queue-driver-chip {
     cursor: grab;
-}
-
-.rar-queue-clear-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
-    background: #ffffff;
-    border: 1px solid var(--rar-border);
 }
 
 .rar-queue-heading {
@@ -840,10 +797,6 @@
     border: 1px dashed var(--rar-border-strong);
 }
 
-.rar-queue-list:empty {
-    border: 1px dashed var(--rar-border-strong);
-}
-
 .rar-editor-forecast-list {
     display: grid;
     gap: 10px;
@@ -889,34 +842,6 @@
     padding: 2px 5px;
 }
 
-.rar-queue-item {
-    display: grid;
-    grid-template-columns: auto minmax(94px, 1fr) auto;
-    flex: 0 1 auto;
-    max-width: 100%;
-    gap: 6px 8px;
-    align-items: center;
-    min-height: 42px;
-    padding: 8px;
-    background: var(--rar-driver-bg, var(--rar-surface-soft));
-    border: 1px solid var(--rar-driver-border, var(--rar-border));
-    border-left: 5px solid var(--rar-driver-color, var(--rar-primary));
-}
-
-.rar-queue-title {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--rar-driver-color, var(--rar-primary));
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.rar-queue-actions {
-    display: flex;
-    gap: 5px;
-    justify-content: flex-end;
-}
-
 .rar-queue-grip {
     color: var(--rar-muted);
     cursor: grab;
@@ -935,7 +860,6 @@
     font-weight: 800;
 }
 
-.rar-mini-btn-danger,
 .rar-queue-clear-all {
     background: var(--rar-danger);
 }
@@ -954,15 +878,6 @@
     margin: 0;
     color: var(--rar-muted);
     font-weight: 700;
-}
-
-.rar-forecast-note {
-    padding: 10px 12px;
-    color: var(--rar-muted);
-    background: var(--rar-surface-soft);
-    border: 1px dashed var(--rar-border-strong);
-    font-size: 13px;
-    font-weight: 800;
 }
 
 .rar-forecast-item {
@@ -1147,7 +1062,7 @@
 
 .rar-switch-time-preview {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;
     align-items: center;
     margin-bottom: 0;
@@ -1158,6 +1073,7 @@
 }
 
 .rar-switch-time-preview span {
+    grid-row: 1 / span 2;
     color: #d9dde2;
     font-size: 12px;
     font-weight: 900;
@@ -1165,11 +1081,13 @@
 }
 
 .rar-switch-time-preview strong {
+    justify-self: end;
     font-size: 24px;
     line-height: 1;
 }
 
 .rar-switch-time-preview em {
+    justify-self: end;
     padding: 5px 8px;
     color: #111111;
     background: var(--rar-success);
@@ -1338,23 +1256,8 @@
         justify-self: stretch;
     }
 
-    .rar-queue-lanes,
-    .rar-queue-button-row,
-    .rar-queue-pattern {
+    .rar-queue-button-row {
         grid-template-columns: 1fr;
-    }
-
-    .rar-queue-item {
-        grid-template-columns: auto minmax(0, 1fr);
-    }
-
-    .rar-queue-actions {
-        grid-column: 1 / -1;
-        justify-content: stretch;
-    }
-
-    .rar-queue-actions .rar-mini-icon {
-        flex: 1;
     }
 
     .rar-message {
