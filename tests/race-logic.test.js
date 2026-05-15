@@ -207,6 +207,21 @@ test('infers lap durations from driver switches', () => {
     assert.equal(stats.byDriver['2'].recentAverage, 45 * 60);
 });
 
+test('falls back to planned lap time when switch timing is inconsistent', () => {
+    const data = raceData({
+        race: { start_time: '2026-05-01 10:00:00' },
+        rotations: [
+            { id: 1, from_driver_id: 1, to_driver_id: 2, switched_at: '2026-05-01 09:55:00' }
+        ]
+    });
+
+    const stats = logic.getInferredLapStats(data, parseDate);
+
+    assert.equal(stats.completedLaps, 1);
+    assert.equal(stats.byDriver['1'].count, 1);
+    assert.equal(stats.byDriver['1'].recentAverage, 45 * 60);
+});
+
 test('deducts first lap extra time from the first inferred lap', () => {
     const data = raceData({
         race: { first_lap_extra_time: 7 * 60 },

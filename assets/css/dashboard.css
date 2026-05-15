@@ -243,6 +243,31 @@
     line-height: 1.25;
 }
 
+.rar-start-countdown {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    align-items: baseline;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    background: #111111;
+    color: #ffffff;
+    border-left: 5px solid var(--rar-success);
+}
+
+.rar-start-countdown span {
+    color: #d7dbe0;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.rar-start-countdown strong {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 22px;
+    font-weight: 900;
+}
+
 .rar-collapsible-card {
     padding: 0;
     overflow: hidden;
@@ -297,6 +322,24 @@
     grid-column: 1 / -1;
     border-top-color: var(--rar-success);
     background: #f9fbf9;
+}
+
+.rar-switch-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 1.25fr) minmax(280px, 0.75fr);
+    gap: 14px;
+    align-items: stretch;
+}
+
+.rar-switch-preview-panel,
+.rar-switch-action-panel {
+    min-width: 0;
+}
+
+.rar-switch-action-panel {
+    display: grid;
+    align-content: start;
+    gap: 10px;
 }
 
 .rar-form-group {
@@ -440,7 +483,7 @@
 
 .rar-driver-card {
     display: grid;
-    grid-template-columns: auto minmax(140px, 1fr) minmax(0, 3fr);
+    grid-template-columns: auto minmax(120px, 0.78fr) minmax(0, 3.22fr);
     gap: 10px;
     align-items: center;
     padding: 10px 12px;
@@ -487,7 +530,8 @@
     font-weight: 800;
 }
 
-.rar-driver-name {
+.rar-driver-name,
+.rar-driver-name-field {
     min-width: 0;
     padding-right: 0;
     margin-bottom: 0;
@@ -498,6 +542,30 @@
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.rar-driver-name-field {
+    display: grid;
+    gap: 4px;
+}
+
+.rar-driver-name-field small {
+    color: var(--rar-muted);
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.rar-driver-name-input {
+    width: 100%;
+    min-width: 0;
+    height: 30px;
+    padding: 4px 7px;
+    color: #111111;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(17, 17, 17, 0.18);
+    font-size: 15px;
+    font-weight: 900;
 }
 
 .rar-driver-card.is-driver-focused {
@@ -514,23 +582,43 @@
 
 .rar-driver-stats-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(62px, 1fr));
+    grid-template-columns: minmax(56px, 0.8fr) minmax(56px, 0.8fr) minmax(72px, 0.9fr) minmax(72px, 0.9fr) minmax(108px, 1.35fr);
     gap: 6px;
 }
 
-.rar-driver-stats-row span {
+.rar-driver-stats-row span,
+.rar-driver-plan-field {
     min-width: 0;
     padding: 6px 8px;
     background: rgba(255, 255, 255, 0.72);
     border: 1px solid rgba(17, 17, 17, 0.14);
 }
 
-.rar-driver-stats-row small {
+.rar-driver-stats-row small,
+.rar-driver-plan-field small {
     display: block;
     color: #333333;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
+}
+
+.rar-driver-plan-field {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+}
+
+.rar-driver-plan-time {
+    width: 100%;
+    min-width: 0;
+    height: 24px;
+    padding: 2px 5px;
+    color: #111111;
+    background: #ffffff;
+    border: 1px solid rgba(17, 17, 17, 0.2);
+    font-size: 13px;
+    font-weight: 900;
 }
 
 .rar-driver-stats-row strong {
@@ -653,13 +741,13 @@
     display: block;
 }
 
-.rar-queue-add,
-.rar-queue-lane {
+.rar-queue-preview,
+.rar-queue-add {
     min-width: 0;
 }
 
-.rar-queue-add h4,
-.rar-queue-lane h4 {
+.rar-queue-preview h4,
+.rar-queue-add h4 {
     margin: 0 0 8px;
     color: #111111;
     font-size: 14px;
@@ -674,12 +762,19 @@
 
 .rar-queue-button-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr auto;
+    gap: 4px 8px;
     align-items: stretch;
     padding: 8px;
-    background: var(--rar-surface-soft);
-    border: 1px solid var(--rar-border);
+    background: var(--rar-driver-bg, var(--rar-surface-soft));
+    border: 1px solid var(--rar-driver-border, var(--rar-border));
+    border-left: 5px solid var(--rar-driver-color, var(--rar-primary));
+    color: #111111;
+    text-align: left;
+}
+
+.rar-queue-driver-chip {
+    cursor: grab;
 }
 
 .rar-queue-clear-actions {
@@ -691,33 +786,43 @@
     border: 1px solid var(--rar-border);
 }
 
+.rar-queue-heading {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.rar-queue-heading h4 {
+    margin: 0;
+}
+
 .rar-queue-buttons > p,
 .rar-queue-list > p {
     margin: 0;
     color: var(--rar-muted);
     font-weight: 700;
+    pointer-events: none;
 }
 
-.rar-queue-button-row span {
-    grid-column: 1 / -1;
+.rar-queue-button-row span,
+.rar-queue-button-row small {
     min-width: 0;
     overflow: hidden;
-    color: var(--rar-primary);
-    font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.rar-queue-lanes {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
+.rar-queue-button-row span {
+    color: var(--rar-driver-color, var(--rar-primary));
+    font-weight: 800;
 }
 
-.rar-queue-lane {
-    padding: 10px;
-    background: #ffffff;
-    border: 1px solid var(--rar-border);
+.rar-queue-button-row small {
+    color: var(--rar-muted);
+    font-weight: 800;
 }
 
 .rar-queue-list {
@@ -727,44 +832,46 @@
     min-height: 58px;
     max-height: none;
     overflow: visible;
-    padding: 0;
+    padding: 10px;
     background: #ffffff;
-    border: 0;
+    border: 1px dashed var(--rar-border-strong);
+}
+
+.rar-queue-list:empty {
+    border: 1px dashed var(--rar-border-strong);
+}
+
+.rar-editor-forecast-list {
+    display: grid;
+    gap: 10px;
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.rar-editor-forecast-item {
+    cursor: grab;
 }
 
 .rar-queue-item {
     display: grid;
     grid-template-columns: auto minmax(94px, 1fr) auto;
-    flex: 1 1 260px;
+    flex: 0 1 auto;
     max-width: 100%;
     gap: 6px 8px;
     align-items: center;
     min-height: 42px;
     padding: 8px;
-    background: var(--rar-surface-soft);
-    border: 1px solid var(--rar-border);
-    border-left: 4px solid var(--rar-primary);
+    background: var(--rar-driver-bg, var(--rar-surface-soft));
+    border: 1px solid var(--rar-driver-border, var(--rar-border));
+    border-left: 5px solid var(--rar-driver-color, var(--rar-primary));
 }
 
 .rar-queue-title {
     min-width: 0;
     overflow: hidden;
-    color: var(--rar-primary);
+    color: var(--rar-driver-color, var(--rar-primary));
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.rar-queue-driver-select {
-    grid-column: 2 / -1;
-    min-width: 0;
-    width: 100%;
-    height: 34px;
-    padding: 5px 8px;
-    border: 1px solid var(--rar-border);
-    background: #ffffff;
-    color: #111111;
-    font-size: 12px;
-    font-weight: 800;
 }
 
 .rar-queue-actions {
@@ -904,6 +1011,24 @@
     text-transform: uppercase;
 }
 
+.rar-forecast-remove {
+    flex: 0 0 auto;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    color: #ffffff;
+    background: #6f7782;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.rar-forecast-remove:hover {
+    background: var(--rar-danger);
+}
+
 .rar-forecast-meta {
     display: grid;
     gap: 3px;
@@ -926,14 +1051,41 @@
 
 .rar-switch-preview {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 8px 12px;
-    margin-bottom: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.rar-switch-driver {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    min-height: 82px;
     padding: 12px;
-    background: var(--rar-surface-soft);
-    border-left: 5px solid var(--rar-danger);
+    background: var(--rar-driver-bg, var(--rar-surface-soft));
+    border: 1px solid var(--rar-driver-border, var(--rar-border));
+    border-left: 6px solid var(--rar-driver-color, var(--rar-primary));
+}
+
+.rar-switch-driver.is-next {
+    box-shadow: inset 0 0 0 2px var(--rar-driver-color, var(--rar-primary));
+}
+
+.rar-switch-driver span {
     color: var(--rar-muted);
-    font-weight: 800;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.rar-switch-driver strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #111111;
+    font-size: 20px;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .rar-switch-time-preview {
@@ -941,8 +1093,8 @@
     grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 10px;
     align-items: center;
-    margin-bottom: 14px;
-    padding: 14px;
+    margin-bottom: 0;
+    padding: 12px;
     color: #ffffff;
     background: #111111;
     border-left: 5px solid var(--rar-success);
@@ -956,7 +1108,7 @@
 }
 
 .rar-switch-time-preview strong {
-    font-size: 28px;
+    font-size: 24px;
     line-height: 1;
 }
 
@@ -987,25 +1139,36 @@
 }
 
 #switchDriverTimeOkBtn {
-    min-width: 72px;
+    min-width: 58px;
+    padding-inline: 12px;
+}
+
+.rar-switch-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+#switchDriverBtn {
+    width: auto;
+    min-width: 230px;
+    min-height: 42px;
+    padding: 10px 16px;
 }
 
 #undoSwitchBtn {
-    margin-top: 10px;
+    min-height: 38px;
+    margin-top: 0;
+    padding: 9px 14px;
+    color: #ffffff;
+    background: #6f7782;
+    font-size: 12px;
 }
 
-.rar-switch-preview span {
-    color: var(--rar-muted);
-    font-size: 13px;
-}
-
-.rar-switch-preview strong {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--rar-primary);
-    font-size: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+#undoSwitchBtn:hover {
+    background: #5d6570;
+    box-shadow: 0 6px 12px rgba(78, 86, 96, 0.2);
 }
 
 .rar-message {
@@ -1084,6 +1247,11 @@
         justify-items: start;
     }
 
+    .rar-switch-layout,
+    .rar-switch-preview {
+        grid-template-columns: 1fr;
+    }
+
     .rar-switch-time-preview {
         grid-template-columns: 1fr;
     }
@@ -1094,6 +1262,15 @@
 
     .rar-switch-time-preview em {
         width: fit-content;
+    }
+
+    .rar-switch-actions {
+        justify-content: stretch;
+    }
+
+    #switchDriverBtn,
+    #undoSwitchBtn {
+        width: 100%;
     }
 
     .rar-sequence-editor {
@@ -1121,10 +1298,6 @@
 
     .rar-queue-actions .rar-mini-icon {
         flex: 1;
-    }
-
-    .rar-queue-driver-select {
-        grid-column: 1 / -1;
     }
 
     .rar-message {

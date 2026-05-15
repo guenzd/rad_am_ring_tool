@@ -107,14 +107,8 @@
             let switchTime = parseDate(rotation.switched_at);
             let driverId = String(rotation.from_driver_id);
 
-            if (!switchTime || !previousTime || switchTime.getTime() <= previousTime.getTime()) {
+            if (!driverId) {
                 return;
-            }
-
-            let lapSeconds = (switchTime.getTime() - previousTime.getTime()) / 1000;
-
-            if (index === 0) {
-                lapSeconds = Math.max(1, lapSeconds - firstLapExtra);
             }
 
             if (!stats.byDriver[driverId]) {
@@ -127,16 +121,39 @@
             }
 
             stats.byDriver[driverId].count++;
-            stats.byDriver[driverId].total += lapSeconds;
-            stats.byDriver[driverId].laps.push(lapSeconds);
-            stats.byDriver[driverId].laps = stats.byDriver[driverId].laps.slice(-3);
-            stats.byDriver[driverId].recentAverage = stats.byDriver[driverId].laps.reduce(function(sum, value) {
-                return sum + value;
-            }, 0) / stats.byDriver[driverId].laps.length;
-
             stats.completedLaps++;
-            stats.latestSwitchTime = switchTime;
-            previousTime = switchTime;
+
+            let lapSeconds = null;
+            let hasValidTimeRange = switchTime && previousTime && switchTime.getTime() > previousTime.getTime();
+
+            if (hasValidTimeRange) {
+                lapSeconds = (switchTime.getTime() - previousTime.getTime()) / 1000;
+
+                if (index === 0) {
+                    lapSeconds = Math.max(1, lapSeconds - firstLapExtra);
+                }
+            } else {
+                let driver = getDriverById(raceData.drivers, driverId);
+                let fallbackLapSeconds = driver ? parseFloat(driver.avg_lap_time || 0) : 0;
+
+                if (fallbackLapSeconds > 0) {
+                    lapSeconds = fallbackLapSeconds;
+                }
+            }
+
+            if (lapSeconds) {
+                stats.byDriver[driverId].total += lapSeconds;
+                stats.byDriver[driverId].laps.push(lapSeconds);
+                stats.byDriver[driverId].laps = stats.byDriver[driverId].laps.slice(-3);
+                stats.byDriver[driverId].recentAverage = stats.byDriver[driverId].laps.reduce(function(sum, value) {
+                    return sum + value;
+                }, 0) / stats.byDriver[driverId].laps.length;
+
+                if (hasValidTimeRange) {
+                    stats.latestSwitchTime = switchTime;
+                    previousTime = switchTime;
+                }
+            }
         });
 
         return stats;

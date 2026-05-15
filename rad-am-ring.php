@@ -136,6 +136,8 @@ add_action( 'wp_ajax_rar_switch_driver', 'rar_ajax_switch_driver' );
 add_action( 'wp_ajax_rar_get_race_data', 'rar_ajax_get_race_data' );
 add_action( 'wp_ajax_rar_get_prognosis', 'rar_ajax_get_prognosis' );
 add_action( 'wp_ajax_rar_add_driver', 'rar_ajax_add_driver' );
+add_action( 'wp_ajax_rar_update_driver_plan_time', 'rar_ajax_update_driver_plan_time' );
+add_action( 'wp_ajax_rar_update_driver_name', 'rar_ajax_update_driver_name' );
 add_action( 'wp_ajax_rar_end_race', 'rar_ajax_end_race' );
 add_action( 'wp_ajax_rar_get_all_races', 'rar_ajax_get_all_races' );
 add_action( 'wp_ajax_rar_save_rotation_sequence', 'rar_ajax_save_rotation_sequence' );
@@ -178,6 +180,7 @@ function rar_ajax_create_race() {
     $start_time = sanitize_text_field( wp_unslash( $_POST['start_time'] ?? '' ) );
     $planned_end_time = sanitize_text_field( wp_unslash( $_POST['planned_end_time'] ?? '' ) );
     $first_lap_extra_time = isset( $_POST['first_lap_extra_time'] ) ? floatval( $_POST['first_lap_extra_time'] ) : 0;
+    $default_driver_names = rar_parse_driver_names( wp_unslash( $_POST['default_driver_names'] ?? '' ) );
 
     if ( ! $race_name ) {
         wp_send_json_error( 'Rennname erforderlich' );
@@ -204,7 +207,31 @@ function rar_ajax_create_race() {
         $start_datetime->format( 'Y-m-d H:i:s' ),
         $planned_end_datetime->format( 'Y-m-d H:i:s' )
     );
+
+    $default_driver_orders = [];
+    foreach ( $default_driver_names as $driver_name ) {
+        RAR_Database::add_driver( $race_id, $driver_name, 45 * 60 );
+        $default_driver_orders[] = count( $default_driver_orders ) + 1;
+    }
+
+    if ( $default_driver_orders ) {
+        RAR_Database::save_rotation_sequence( $race_id, ' | ' . implode( ',', $default_driver_orders ) );
+    }
+
     wp_send_json_success( [ 'race_id' => $race_id ] );
+}
+
+function rar_parse_driver_names( $value ) {
+    if ( ! is_string( $value ) ) {
+        return [];
+    }
+
+    $names = preg_split( '/[\r\n,]+/', $value );
+    $names = array_map( 'sanitize_text_field', $names );
+    $names = array_map( 'trim', $names );
+    $names = array_filter( $names );
+
+    return array_values( array_unique( $names ) );
 }
 
 function rar_parse_local_datetime( $value ) {
@@ -320,6 +347,52 @@ function rar_ajax_add_driver() {
 
     $driver_id = RAR_Database::add_driver( $race_id, $driver_name, $avg_lap_time );
     wp_send_json_success( [ 'driver_id' => $driver_id ] );
+}
+
+function rar_ajax_update_driver_plan_time() {
+    if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rar_nonce' ) ) {
+        wp_send_json_error( 'Sicherheitsüberprüfung fehlgeschlagen' );
+    }
+
+    rar_require_edit_access();
+
+    $driver_id = intval( $_POST['driver_id'] ?? 0 );
+    $race_id = intval( $_POST['race_id'] ?? 0 );
+    $avg_lap_time = isset( $_POST['avg_lap_time'] ) ? floatval( $_POST['avg_lap_time'] ) : 0;
+
+    if ( ! $driver_id || ! $race_id || $avg_lap_time <= 0 ) {
+        wp_send_json_error( 'Ungültige Daten' );
+    }
+
+    $updated = RAR_Database::update_driver_plan_time( $driver_id, $race_id, $avg_lap_time );
+    if ( false === $updated ) {
+        wp_send_json_error( 'Planzeit konnte nicht gespeichert werden' );
+    }
+
+    wp_send_json_success( [ 'avg_lap_time' => $avg_lap_time ] );
+}
+
+function rar_ajax_update_driver_name() {
+    if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rar_nonce' ) ) {
+        wp_send_json_error( 'Sicherheitsüberprüfung fehlgeschlagen' );
+    }
+
+    rar_require_edit_access();
+
+    $driver_id = intval( $_POST['driver_id'] ?? 0 );
+    $race_id = intval( $_POST['race_id'] ?? 0 );
+    $driver_name = sanitize_text_field( wp_unslash( $_POST['driver_name'] ?? '' ) );
+
+    if ( ! $driver_id || ! $race_id || ! $driver_name ) {
+        wp_send_json_error( 'Ungültige Daten' );
+    }
+
+    $updated = RAR_Database::update_driver_name( $driver_id, $race_id, $driver_name );
+    if ( false === $updated ) {
+        wp_send_json_error( 'Fahrername konnte nicht gespeichert werden' );
+    }
+
+    wp_send_json_success( [ 'driver_name' => $driver_name ] );
 }
 
 function rar_ajax_end_race() {

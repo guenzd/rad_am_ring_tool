@@ -201,6 +201,42 @@ class RAR_Database {
     }
 
     /**
+     * Update a driver's planned lap time.
+     */
+    public static function update_driver_plan_time( $driver_id, $race_id, $avg_lap_time ) {
+        global $wpdb;
+
+        return $wpdb->update(
+            "{$wpdb->prefix}rar_drivers",
+            [ 'avg_lap_time' => $avg_lap_time ],
+            [
+                'id' => $driver_id,
+                'race_id' => $race_id,
+            ],
+            [ '%f' ],
+            [ '%d', '%d' ]
+        );
+    }
+
+    /**
+     * Update a driver's display name.
+     */
+    public static function update_driver_name( $driver_id, $race_id, $driver_name ) {
+        global $wpdb;
+
+        return $wpdb->update(
+            "{$wpdb->prefix}rar_drivers",
+            [ 'driver_name' => $driver_name ],
+            [
+                'id' => $driver_id,
+                'race_id' => $race_id,
+            ],
+            [ '%s' ],
+            [ '%d', '%d' ]
+        );
+    }
+
+    /**
      * Save a race-specific rotation sequence.
      */
     public static function save_rotation_sequence( $race_id, $rotation_sequence ) {
