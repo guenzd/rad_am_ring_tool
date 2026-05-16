@@ -1,26 +1,71 @@
 /* Rad am Ring Dashboard Styles */
 
 :root {
-    --rar-page-bg: #a8a8a8;
-    --rar-surface: #ffffff;
-    --rar-surface-soft: #f4f5f7;
-    --rar-surface-dark: #111111;
-    --rar-text: #202020;
-    --rar-muted: #656565;
-    --rar-border: #d7dbe0;
-    --rar-border-strong: #b7bec8;
-    --rar-primary: #00378a;
-    --rar-primary-hover: #002a69;
-    --rar-secondary: #1177aa;
-    --rar-secondary-hover: #005e91;
-    --rar-success: #11aa44;
-    --rar-success-hover: #0b8735;
-    --rar-danger: #aa1d11;
-    --rar-danger-hover: #87150c;
-    --rar-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+    /* GitHub dark palette, kept central so components use semantic tokens only. */
+    --rar-page-bg: #0d1117;
+    --rar-surface: #161b22;
+    --rar-surface-soft: #21262d;
+    --rar-surface-dark: #010409;
+    --rar-panel-dark: #05070a;
+    --rar-control-bg: #1f2937;
+    --rar-control-bg-muted: #0b1118;
+    --rar-control-bg-dark: #060a10;
+    --rar-control-bg-focus: #253244;
+    --rar-text: #c9d1d9;
+    --rar-heading: #d8dee5;
+    --rar-text-bright: #f0f6fc;
+    --rar-text-inverse: #ffffff;
+    --rar-text-on-warning: #15100a;
+    --rar-text-danger-soft: #ffd7d4;
+    --rar-muted: #8b949e;
+    --rar-muted-strong: #9aa7b6;
+    --rar-border: #30363d;
+    --rar-border-strong: #484f58;
+    --rar-control-border: #4b5563;
+    --rar-control-border-muted: #242c36;
+    --rar-badge-bg: #151b23;
+    --rar-badge-border-current: #3d444d;
+    --rar-primary: #58a6ff;
+    --rar-primary-hover: #79c0ff;
+    --rar-secondary: #1f6feb;
+    --rar-secondary-hover: #388bfd;
+    --rar-success: #3fb950;
+    --rar-success-hover: #2ea043;
+    --rar-danger: #f85149;
+    --rar-danger-hover: #da3633;
+    --rar-danger-bg: #8e201b;
+    --rar-danger-bg-hover: #a52822;
+    --rar-warning: #f4c542;
+    --rar-warning-bg: #34280f;
+    --rar-warning-border: #9f7d24;
+    --rar-neutral-action: #384454;
+    --rar-neutral-action-hover: #4a596c;
+    --rar-success-surface: #101b16;
+    --rar-focus-ring: rgba(88, 166, 255, 0.18);
+    --rar-focus-ring-soft: rgba(88, 166, 255, 0.14);
+    --rar-focus-ring-old: rgba(17, 119, 170, 0.35);
+    --rar-shadow-soft: 0 3px 0 rgba(0, 0, 0, 0.35);
+    --rar-shadow-strong: 0 10px 24px rgba(0, 0, 0, 0.38);
+    --rar-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    --rar-driver-blue: #64a7ff;
+    --rar-driver-blue-bg: #13253e;
+    --rar-driver-blue-border: #2f67a8;
+    --rar-driver-green: #25d366;
+    --rar-driver-green-bg: #123421;
+    --rar-driver-green-border: #29935a;
+    --rar-driver-yellow: #f4c542;
+    --rar-driver-yellow-bg: #352b12;
+    --rar-driver-yellow-border: #a98322;
+    --rar-driver-red: #ff6b5f;
+    --rar-driver-red-bg: #371916;
+    --rar-driver-red-border: #aa3d34;
 }
 
 #wpbody-content {
+    background: var(--rar-page-bg);
+}
+
+body:has(.rar-public-container) {
     background: var(--rar-page-bg);
 }
 
@@ -54,7 +99,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 
 .rar-content {
     display: grid;
-    gap: 18px;
+    gap: 12px;
 }
 
 .rar-public-empty p {
@@ -66,20 +111,20 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-setup-panel {
     background: var(--rar-surface);
     border: 1px solid var(--rar-border);
-    border-top: 5px solid #111111;
-    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08);
+    border-top: 4px solid var(--rar-panel-dark);
+    box-shadow: var(--rar-shadow-soft);
 }
 
 .rar-setup-panel > summary {
     display: flex;
     justify-content: space-between;
-    gap: 14px;
+    gap: 10px;
     align-items: center;
-    min-height: 46px;
-    padding: 10px 16px;
+    min-height: 36px;
+    padding: 7px 14px;
     cursor: pointer;
-    color: #111111;
-    font-size: 16px;
+    color: var(--rar-heading);
+    font-size: 14px;
     font-weight: 800;
     list-style: none;
 }
@@ -91,7 +136,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-setup-panel > summary::after {
     content: "+";
     color: var(--rar-danger);
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1;
 }
 
@@ -102,7 +147,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-setup-panel > summary strong {
     margin-left: auto;
     color: var(--rar-muted);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
 }
 
@@ -120,8 +165,8 @@ body:has(.rar-public-container) .wp-block-post-title {
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 14px;
-    align-items: start;
+    gap: 12px;
+    align-items: stretch;
 }
 
 .rar-race-title-actions {
@@ -136,20 +181,20 @@ body:has(.rar-public-container) .wp-block-post-title {
     align-items: center;
     min-height: 42px;
     padding: 8px 10px;
-    color: #111111;
-    background: #f2c94c;
-    border-left: 5px solid #111111;
+    color: var(--rar-text-on-warning);
+    background: var(--rar-warning);
+    border-left: 5px solid var(--rar-panel-dark);
     font-size: 12px;
     font-weight: 900;
     text-transform: uppercase;
 }
 
 .rar-race-title-row h2 {
-    margin: 4px 0 0;
-    padding: 0 0 12px;
+    margin: 0;
+    padding: 0 0 7px;
     color: var(--rar-primary);
-    border-bottom: 4px solid var(--rar-primary);
-    font-size: 28px;
+    border-bottom: 3px solid var(--rar-primary);
+    font-size: 24px;
     font-weight: 800;
     line-height: 1.15;
 }
@@ -161,60 +206,60 @@ body:has(.rar-public-container) .wp-block-post-title {
 
 .rar-lap-prognosis {
     display: grid;
-    min-width: 150px;
-    padding: 10px 12px;
-    background: #111111;
+    min-width: 132px;
+    padding: 8px 10px;
+    background: var(--rar-panel-dark);
     border-left: 5px solid var(--rar-success);
-    color: #ffffff;
+    color: var(--rar-text-inverse);
     text-align: right;
 }
 
 .rar-lap-prognosis strong {
-    font-size: 30px;
+    font-size: 26px;
     line-height: 1;
 }
 
 .rar-lap-prognosis span {
-    margin-top: 3px;
-    color: #d9dde2;
-    font-size: 12px;
+    margin-top: 2px;
+    color: var(--rar-heading);
+    font-size: 11px;
     font-weight: 800;
 }
 
 .rar-lap-prognosis em {
     justify-self: end;
-    margin-top: 6px;
-    padding: 3px 7px;
-    font-size: 11px;
+    margin-top: 5px;
+    padding: 3px 6px;
+    font-size: 10px;
     font-style: normal;
     font-weight: 800;
     text-transform: uppercase;
 }
 
 .rar-lap-prognosis em.is-high {
-    color: #ffffff;
+    color: var(--rar-text-inverse);
     background: var(--rar-success);
 }
 
 .rar-lap-prognosis em.is-medium {
-    color: #111111;
-    background: #f2c94c;
+    color: var(--rar-text-on-warning);
+    background: var(--rar-warning);
 }
 
 .rar-lap-prognosis em.is-low {
-    color: #ffffff;
+    color: var(--rar-text-inverse);
     background: var(--rar-danger);
 }
 
 .rar-race-config {
     grid-column: 1 / -1;
     width: fit-content;
-    margin-top: -6px;
-    padding: 8px 12px;
-    color: #ffffff;
-    background: #111111;
+    margin-top: -4px;
+    padding: 6px 10px;
+    color: var(--rar-text-inverse);
+    background: var(--rar-panel-dark);
     border-left: 5px solid var(--rar-danger);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 800;
 }
 
@@ -224,17 +269,17 @@ body:has(.rar-public-container) .wp-block-post-title {
     background: var(--rar-surface);
     border: 1px solid var(--rar-border);
     border-top: 5px solid var(--rar-primary);
-    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08);
+    box-shadow: var(--rar-shadow-soft);
 }
 
 .rar-card:hover {
     border-color: var(--rar-border-strong);
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--rar-shadow-strong);
 }
 
 .rar-card h3 {
     margin: 0 0 16px;
-    color: #111111;
+    color: var(--rar-heading);
     font-size: 19px;
     font-weight: 800;
     line-height: 1.25;
@@ -247,13 +292,13 @@ body:has(.rar-public-container) .wp-block-post-title {
     align-items: baseline;
     margin: 0 0 12px;
     padding: 10px 12px;
-    background: #111111;
-    color: #ffffff;
+    background: var(--rar-panel-dark);
+    color: var(--rar-text-inverse);
     border-left: 5px solid var(--rar-success);
 }
 
 .rar-start-countdown span {
-    color: #d7dbe0;
+    color: var(--rar-heading);
     font-size: 12px;
     font-weight: 900;
     text-transform: uppercase;
@@ -278,7 +323,7 @@ body:has(.rar-public-container) .wp-block-post-title {
     min-height: 54px;
     padding: 16px 18px;
     cursor: pointer;
-    color: #111111;
+    color: var(--rar-heading);
     font-size: 16px;
     font-weight: 900;
     text-transform: uppercase;
@@ -304,16 +349,19 @@ body:has(.rar-public-container) .wp-block-post-title {
 }
 
 .rar-card-forecast {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: auto minmax(0, 1fr);
     border-top-color: var(--rar-danger);
 }
 
-.rar-card-sequence-edit {
-    border-top-color: var(--rar-secondary);
+.rar-card-forecast h3 {
+    font-size: 24px;
 }
 
 .rar-card-switch {
     border-top-color: var(--rar-success);
-    background: #f9fbf9;
+    background: var(--rar-success-surface);
 }
 
 .rar-switch-layout {
@@ -349,7 +397,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 }
 
 .rar-field span {
-    color: #111111;
+    color: var(--rar-heading);
     font-size: 13px;
     font-weight: 800;
     line-height: 1.2;
@@ -360,18 +408,24 @@ body:has(.rar-public-container) .wp-block-post-title {
     min-height: 48px;
     padding: 12px 14px;
     color: var(--rar-text);
-    background: var(--rar-surface-soft);
+    background: var(--rar-page-bg);
     border: 1px solid var(--rar-border-strong);
     border-radius: 0;
     font-size: 16px;
     line-height: 1.25;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    box-shadow: none;
 }
 
 .rar-input:focus {
-    outline: 3px solid rgba(17, 119, 170, 0.22);
-    border-color: var(--rar-secondary);
-    background: #ffffff;
+    outline: 3px solid var(--rar-focus-ring);
+    border-color: var(--rar-primary);
+    background: var(--rar-page-bg);
+}
+
+select.rar-input,
+select.rar-input option {
+    color: var(--rar-text);
+    background: var(--rar-page-bg);
 }
 
 .rar-textarea {
@@ -401,49 +455,49 @@ body:has(.rar-public-container) .wp-block-post-title {
 }
 
 .rar-btn:focus-visible {
-    outline: 3px solid rgba(17, 119, 170, 0.35);
+    outline: 3px solid var(--rar-focus-ring-old);
     outline-offset: 2px;
 }
 
 .rar-btn-primary {
-    color: #ffffff;
+    color: var(--rar-text-inverse);
     background: var(--rar-primary);
 }
 
 .rar-btn-primary:hover {
     background: var(--rar-primary-hover);
-    box-shadow: 0 8px 16px rgba(0, 55, 138, 0.24);
+    box-shadow: var(--rar-shadow-strong);
 }
 
 .rar-btn-secondary {
-    color: #ffffff;
+    color: var(--rar-text-inverse);
     background: var(--rar-secondary);
 }
 
 .rar-btn-secondary:hover {
     background: var(--rar-secondary-hover);
-    box-shadow: 0 8px 16px rgba(17, 119, 170, 0.22);
+    box-shadow: var(--rar-shadow-strong);
 }
 
 .rar-btn-success {
-    color: #ffffff;
+    color: var(--rar-text-inverse);
     background: var(--rar-success);
 }
 
 .rar-btn-success:hover {
     background: var(--rar-success-hover);
-    box-shadow: 0 10px 20px rgba(17, 170, 68, 0.28);
+    box-shadow: var(--rar-shadow-strong);
 }
 
 .rar-btn-danger {
     width: 100%;
-    color: #ffffff;
+    color: var(--rar-text-inverse);
     background: var(--rar-danger);
 }
 
 .rar-btn-danger:hover {
     background: var(--rar-danger-hover);
-    box-shadow: 0 8px 16px rgba(170, 29, 17, 0.24);
+    box-shadow: var(--rar-shadow-strong);
 }
 
 .rar-btn-full {
@@ -475,7 +529,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 
 .rar-driver-card {
     display: grid;
-    grid-template-columns: auto minmax(120px, 0.78fr) minmax(0, 3.22fr);
+    grid-template-columns: auto minmax(160px, 1.15fr) minmax(0, 2.85fr);
     gap: 10px;
     align-items: center;
     padding: 10px 12px;
@@ -487,32 +541,32 @@ body:has(.rar-public-container) .wp-block-post-title {
 }
 
 .rar-driver-card:focus-visible {
-    outline: 3px solid rgba(17, 119, 170, 0.35);
+    outline: 3px solid var(--rar-focus-ring-old);
     outline-offset: 2px;
 }
 
 .rar-driver-color-1 {
-    --rar-driver-color: #00378a;
-    --rar-driver-bg: #dce9ff;
-    --rar-driver-border: #8fb6f2;
+    --rar-driver-color: var(--rar-driver-blue);
+    --rar-driver-bg: var(--rar-driver-blue-bg);
+    --rar-driver-border: var(--rar-driver-blue-border);
 }
 
 .rar-driver-color-2 {
-    --rar-driver-color: #11aa44;
-    --rar-driver-bg: #dcf6e5;
-    --rar-driver-border: #86d8a0;
+    --rar-driver-color: var(--rar-driver-green);
+    --rar-driver-bg: var(--rar-driver-green-bg);
+    --rar-driver-border: var(--rar-driver-green-border);
 }
 
 .rar-driver-color-3 {
-    --rar-driver-color: #b98500;
-    --rar-driver-bg: #fff4bf;
-    --rar-driver-border: #f2c94c;
+    --rar-driver-color: var(--rar-driver-yellow);
+    --rar-driver-bg: var(--rar-driver-yellow-bg);
+    --rar-driver-border: var(--rar-driver-yellow-border);
 }
 
 .rar-driver-color-4 {
-    --rar-driver-color: #aa1d11;
-    --rar-driver-bg: #ffe1dc;
-    --rar-driver-border: #e79a90;
+    --rar-driver-color: var(--rar-driver-red);
+    --rar-driver-bg: var(--rar-driver-red-bg);
+    --rar-driver-border: var(--rar-driver-red-border);
 }
 
 .rar-driver-order {
@@ -528,7 +582,7 @@ body:has(.rar-public-container) .wp-block-post-title {
     padding-right: 0;
     margin-bottom: 0;
     overflow: hidden;
-    color: #111111;
+    color: var(--rar-heading);
     font-size: 17px;
     font-weight: 800;
     line-height: 1.2;
@@ -553,15 +607,15 @@ body:has(.rar-public-container) .wp-block-post-title {
     min-width: 0;
     height: 30px;
     padding: 4px 7px;
-    color: #111111;
-    background: rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(17, 17, 17, 0.18);
+    color: var(--rar-heading);
+    background: var(--rar-control-bg);
+    border: 1px solid var(--rar-control-border);
     font-size: 15px;
     font-weight: 900;
 }
 
 .rar-driver-card.is-driver-focused {
-    background: var(--rar-driver-bg, #ffffff);
+    background: var(--rar-driver-bg, var(--rar-surface-soft));
     border-color: var(--rar-driver-color, var(--rar-primary));
     box-shadow: inset 0 0 0 2px var(--rar-driver-color, var(--rar-primary));
 }
@@ -574,7 +628,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 
 .rar-driver-stats-row {
     display: grid;
-    grid-template-columns: minmax(56px, 0.8fr) minmax(56px, 0.8fr) minmax(72px, 0.9fr) minmax(72px, 0.9fr) minmax(108px, 1.35fr);
+    grid-template-columns: minmax(52px, 0.76fr) minmax(52px, 0.76fr) minmax(74px, 0.95fr) minmax(70px, 0.9fr) minmax(88px, 1.08fr);
     gap: 6px;
 }
 
@@ -582,14 +636,14 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-driver-plan-field {
     min-width: 0;
     padding: 6px 8px;
-    background: rgba(255, 255, 255, 0.72);
-    border: 1px solid rgba(17, 17, 17, 0.14);
+    background: var(--rar-control-bg-muted);
+    border: 1px solid var(--rar-control-border-muted);
 }
 
 .rar-driver-stats-row small,
 .rar-driver-plan-field small {
     display: block;
-    color: #333333;
+    color: var(--rar-heading);
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
@@ -606,9 +660,9 @@ body:has(.rar-public-container) .wp-block-post-title {
     min-width: 0;
     height: 24px;
     padding: 2px 5px;
-    color: #111111;
-    background: #ffffff;
-    border: 1px solid rgba(17, 17, 17, 0.2);
+    color: var(--rar-heading);
+    background: var(--rar-control-bg);
+    border: 1px solid var(--rar-control-border);
     font-size: 13px;
     font-weight: 900;
 }
@@ -616,7 +670,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-driver-stats-row strong {
     display: block;
     overflow: hidden;
-    color: #111111;
+    color: var(--rar-heading);
     font-size: 13px;
     font-weight: 900;
     text-overflow: ellipsis;
@@ -628,17 +682,17 @@ body:has(.rar-public-container) .wp-block-post-title {
     overflow-y: auto;
     margin-top: 12px;
     padding: 12px;
-    background: #111111;
-    border: 1px solid #111111;
-    color: #f7f7f7;
+    background: var(--rar-panel-dark);
+    border: 1px solid var(--rar-panel-dark);
+    color: var(--rar-text-bright);
     font-family: Consolas, Monaco, monospace;
     font-size: 13px;
 }
 
 .rar-log-entry {
     padding: 10px 0;
-    color: #f7f7f7;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--rar-text-bright);
+    border-bottom: 1px solid var(--rar-border);
 }
 
 .rar-log-entry:last-child {
@@ -648,230 +702,9 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-forecast-list {
     display: grid;
     gap: 10px;
-    max-height: 520px;
+    max-height: 1040px;
     overflow-y: auto;
     padding-right: 4px;
-}
-
-.rar-sequence-editor {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    align-items: stretch;
-    margin-bottom: 14px;
-}
-
-.rar-sequence-panel {
-    margin-bottom: 14px;
-    background: var(--rar-surface-soft);
-    border: 1px solid var(--rar-border);
-}
-
-.rar-sequence-panel > summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    min-height: 48px;
-    padding: 12px;
-    cursor: pointer;
-    color: var(--rar-primary);
-    font-size: 14px;
-    font-weight: 900;
-    text-transform: uppercase;
-}
-
-.rar-sequence-panel > summary::-webkit-details-marker {
-    display: none;
-}
-
-.rar-sequence-panel > summary::after {
-    content: "+";
-    color: var(--rar-danger);
-    font-size: 22px;
-    line-height: 1;
-}
-
-.rar-sequence-panel[open] > summary::after {
-    content: "-";
-}
-
-.rar-sequence-panel .rar-sequence-editor {
-    padding: 0 12px 12px;
-}
-
-.rar-sequence-editor .rar-btn {
-    justify-self: end;
-    min-width: 150px;
-}
-
-.rar-queue-builder {
-    display: grid;
-    gap: 12px;
-}
-
-.rar-queue-preview,
-.rar-queue-add {
-    min-width: 0;
-}
-
-.rar-queue-preview h4,
-.rar-queue-add h4 {
-    margin: 0 0 8px;
-    color: #111111;
-    font-size: 14px;
-    font-weight: 800;
-}
-
-.rar-queue-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 8px;
-}
-
-.rar-queue-button-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 4px 8px;
-    align-items: stretch;
-    padding: 8px;
-    background: var(--rar-driver-bg, var(--rar-surface-soft));
-    border: 1px solid var(--rar-driver-border, var(--rar-border));
-    border-left: 5px solid var(--rar-driver-color, var(--rar-primary));
-    color: #111111;
-    text-align: left;
-}
-
-.rar-queue-driver-chip {
-    cursor: grab;
-}
-
-.rar-queue-heading {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-}
-
-.rar-queue-heading h4 {
-    margin: 0;
-}
-
-.rar-queue-buttons > p,
-.rar-queue-list > p {
-    margin: 0;
-    color: var(--rar-muted);
-    font-weight: 700;
-    pointer-events: none;
-}
-
-.rar-queue-button-row span,
-.rar-queue-button-row small {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.rar-queue-button-row span {
-    color: var(--rar-driver-color, var(--rar-primary));
-    font-weight: 800;
-}
-
-.rar-queue-button-row small {
-    color: var(--rar-muted);
-    font-weight: 800;
-}
-
-.rar-queue-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 58px;
-    max-height: none;
-    overflow: visible;
-    padding: 10px;
-    background: #ffffff;
-    border: 1px dashed var(--rar-border-strong);
-}
-
-.rar-editor-forecast-list {
-    display: grid;
-    gap: 10px;
-    max-height: 520px;
-    overflow-y: auto;
-}
-
-.rar-editor-forecast-item {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 6px;
-    min-height: 34px;
-    padding: 5px 7px;
-    cursor: grab;
-}
-
-.rar-editor-forecast-item .rar-forecast-main {
-    gap: 6px;
-    flex-wrap: nowrap;
-}
-
-.rar-editor-forecast-item .rar-forecast-name {
-    font-size: 14px;
-}
-
-.rar-editor-forecast-item .rar-forecast-meta {
-    gap: 1px;
-    font-size: 11px;
-}
-
-.rar-editor-forecast-item .rar-forecast-meta strong {
-    font-size: 13px;
-}
-
-.rar-editor-forecast-item .rar-forecast-lap,
-.rar-editor-forecast-item .rar-forecast-driver-lap {
-    font-size: 10px;
-    padding: 1px 4px;
-}
-
-.rar-editor-forecast-item .rar-mini-icon {
-    min-width: 24px;
-    min-height: 22px;
-    padding: 2px 5px;
-}
-
-.rar-queue-grip {
-    color: var(--rar-muted);
-    cursor: grab;
-    font-weight: 800;
-}
-
-.rar-mini-btn,
-.rar-mini-icon {
-    min-height: 30px;
-    padding: 5px 8px;
-    border: 0;
-    cursor: pointer;
-    color: #ffffff;
-    background: var(--rar-secondary);
-    font-size: 12px;
-    font-weight: 800;
-}
-
-.rar-queue-clear-all {
-    background: var(--rar-danger);
-}
-
-.rar-mini-icon {
-    min-width: 34px;
-    padding-inline: 6px;
-    background: #111111;
-}
-
-.rar-queue-remove {
-    background: var(--rar-danger);
 }
 
 .rar-forecast-list > p {
@@ -882,11 +715,11 @@ body:has(.rar-public-container) .wp-block-post-title {
 
 .rar-forecast-item {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) minmax(132px, auto);
+    gap: 14px;
     align-items: center;
-    min-height: 46px;
-    padding: 8px 10px;
+    min-height: 64px;
+    padding: 10px 12px;
     background: var(--rar-driver-bg, var(--rar-surface-soft));
     border: 1px solid var(--rar-driver-border, var(--rar-border));
     border-left: 7px solid var(--rar-driver-color, var(--rar-primary));
@@ -894,9 +727,9 @@ body:has(.rar-public-container) .wp-block-post-title {
 }
 
 .rar-forecast-item.is-current {
-    background: #111111;
+    background: var(--rar-panel-dark);
     border-left-color: var(--rar-success);
-    color: #ffffff;
+    color: var(--rar-text-inverse);
 }
 
 .rar-forecast-item.is-final {
@@ -904,27 +737,27 @@ body:has(.rar-public-container) .wp-block-post-title {
 }
 
 .rar-forecast-item.is-last {
-    background: var(--rar-driver-bg, #fff7d6);
-    border-color: #f2c94c;
-    border-left-color: #f2c94c;
+    background: var(--rar-driver-bg, var(--rar-warning-bg));
+    border-color: var(--rar-warning);
+    border-left-color: var(--rar-warning);
 }
 
 .rar-forecast-item.is-current.is-last {
-    background: #111111;
+    background: var(--rar-panel-dark);
     border-color: var(--rar-success);
 }
 
 .rar-forecast-main {
     display: flex;
     min-width: 0;
-    gap: 7px;
+    gap: 8px;
     align-items: center;
     flex-wrap: wrap;
 }
 
 .rar-forecast-order {
     flex: 0 0 auto;
-    color: #111111;
+    color: var(--rar-heading);
     font-size: 13px;
     font-weight: 800;
 }
@@ -936,8 +769,8 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-forecast-name {
     min-width: 0;
     overflow: hidden;
-    color: #111111;
-    font-size: 16px;
+    color: var(--rar-heading);
+    font-size: 18px;
     font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -950,14 +783,14 @@ body:has(.rar-public-container) .wp-block-post-title {
 }
 
 .rar-forecast-item.is-current .rar-forecast-name {
-    color: #ffffff;
+    color: var(--rar-text-inverse);
 }
 
 .rar-forecast-last-badge {
     flex: 0 0 auto;
     padding: 3px 7px;
-    color: #111111;
-    background: #f2c94c;
+    color: var(--rar-text-on-warning);
+    background: var(--rar-warning);
     font-size: 11px;
     font-weight: 900;
     text-transform: uppercase;
@@ -970,8 +803,8 @@ body:has(.rar-public-container) .wp-block-post-title {
     padding: 0;
     border: 0;
     cursor: pointer;
-    color: #ffffff;
-    background: #6f7782;
+    color: var(--rar-text-inverse);
+    background: var(--rar-neutral-action);
     font-size: 18px;
     font-weight: 900;
     line-height: 1;
@@ -983,7 +816,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 
 .rar-forecast-meta {
     display: grid;
-    gap: 3px;
+    gap: 5px;
     justify-items: end;
     color: var(--rar-muted);
     font-size: 13px;
@@ -991,19 +824,21 @@ body:has(.rar-public-container) .wp-block-post-title {
 }
 
 .rar-forecast-meta strong {
-    color: #111111;
+    color: var(--rar-heading);
     font-family: Consolas, Monaco, monospace;
-    font-size: 18px;
+    font-size: 24px;
+    line-height: 1.05;
 }
 
 .rar-forecast-lap,
 .rar-forecast-driver-lap {
     flex: 0 0 auto;
-    padding: 2px 5px;
-    color: #333333;
-    background: rgba(255, 255, 255, 0.58);
-    border: 1px solid rgba(17, 17, 17, 0.12);
-    font-size: 12px;
+    min-height: 28px;
+    padding: 4px 8px;
+    color: var(--rar-heading);
+    background: var(--rar-badge-bg);
+    border: 1px solid var(--rar-border);
+    font-size: 14px;
     font-weight: 900;
     text-transform: uppercase;
 }
@@ -1012,13 +847,13 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-forecast-item.is-current .rar-forecast-meta strong,
 .rar-forecast-item.is-current .rar-forecast-lap,
 .rar-forecast-item.is-current .rar-forecast-driver-lap {
-    color: #ffffff;
+    color: var(--rar-text-inverse);
 }
 
 .rar-forecast-item.is-current .rar-forecast-lap,
 .rar-forecast-item.is-current .rar-forecast-driver-lap {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.28);
+    background: var(--rar-control-bg);
+    border-color: var(--rar-badge-border-current);
 }
 
 .rar-switch-preview {
@@ -1053,7 +888,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-switch-driver strong {
     min-width: 0;
     overflow: hidden;
-    color: #111111;
+    color: var(--rar-heading);
     font-size: 20px;
     font-weight: 900;
     text-overflow: ellipsis;
@@ -1067,14 +902,14 @@ body:has(.rar-public-container) .wp-block-post-title {
     align-items: center;
     margin-bottom: 0;
     padding: 12px;
-    color: #ffffff;
-    background: #111111;
+    color: var(--rar-text-inverse);
+    background: var(--rar-panel-dark);
     border-left: 5px solid var(--rar-success);
 }
 
 .rar-switch-time-preview span {
     grid-row: 1 / span 2;
-    color: #d9dde2;
+    color: var(--rar-heading);
     font-size: 12px;
     font-weight: 900;
     text-transform: uppercase;
@@ -1089,7 +924,7 @@ body:has(.rar-public-container) .wp-block-post-title {
 .rar-switch-time-preview em {
     justify-self: end;
     padding: 5px 8px;
-    color: #111111;
+    color: var(--rar-text-on-warning);
     background: var(--rar-success);
     font-family: Consolas, Monaco, monospace;
     font-size: 18px;
@@ -1136,14 +971,14 @@ body:has(.rar-public-container) .wp-block-post-title {
     min-height: 38px;
     margin-top: 0;
     padding: 9px 14px;
-    color: #ffffff;
-    background: #6f7782;
+    color: var(--rar-text-inverse);
+    background: var(--rar-neutral-action);
     font-size: 12px;
 }
 
 #undoSwitchBtn:hover {
-    background: #5d6570;
-    box-shadow: 0 6px 12px rgba(78, 86, 96, 0.2);
+    background: var(--rar-neutral-action-hover);
+    box-shadow: var(--rar-shadow-strong);
 }
 
 .rar-message {
@@ -1153,8 +988,8 @@ body:has(.rar-public-container) .wp-block-post-title {
     z-index: 100000;
     max-width: min(420px, calc(100vw - 48px));
     padding: 14px 18px;
-    color: #ffffff;
-    border-left: 6px solid #111111;
+    color: var(--rar-text-inverse);
+    border-left: 6px solid var(--rar-panel-dark);
     box-shadow: var(--rar-shadow);
     font-weight: 800;
 }
@@ -1167,6 +1002,193 @@ body:has(.rar-public-container) .wp-block-post-title {
     background: var(--rar-danger);
 }
 
+.rar-setup-panel > summary,
+.rar-card h3,
+.rar-collapsible-card > summary,
+.rar-field span,
+.rar-driver-name,
+.rar-driver-name-field,
+.rar-driver-name-input,
+.rar-driver-stats-row strong,
+.rar-driver-stats-row small,
+.rar-driver-plan-field small,
+.rar-driver-plan-time,
+.rar-forecast-order,
+.rar-forecast-name,
+.rar-switch-driver strong,
+.rar-switch-preview-panel .rar-switch-driver strong,
+.rar-forecast-meta strong {
+    color: var(--rar-heading);
+}
+
+.rar-input,
+select.rar-input,
+select.rar-input option {
+    color: var(--rar-text);
+}
+
+.rar-card,
+.rar-setup-panel {
+    background: var(--rar-surface);
+    border-color: var(--rar-border);
+    box-shadow: var(--rar-shadow-soft);
+}
+
+.rar-card:hover {
+    border-color: var(--rar-border-strong);
+    box-shadow: var(--rar-shadow-strong);
+}
+
+.rar-card-switch {
+    background: var(--rar-success-surface);
+}
+
+.rar-input,
+.rar-driver-name-input,
+.rar-driver-plan-time {
+    color: var(--rar-text);
+    background: var(--rar-control-bg-dark);
+    border-color: var(--rar-control-border-muted);
+    box-shadow: none;
+    color-scheme: dark;
+}
+
+.rar-input:focus,
+.rar-driver-name-input:focus,
+.rar-driver-plan-time:focus {
+    color: var(--rar-heading);
+    background: var(--rar-control-bg-muted);
+    border-color: var(--rar-badge-border-current);
+    outline-color: var(--rar-focus-ring-soft);
+}
+
+.rar-input::placeholder,
+.rar-driver-name-input::placeholder,
+.rar-driver-plan-time::placeholder {
+    color: var(--rar-muted);
+}
+
+select.rar-input,
+select.rar-input option,
+select.rar-input optgroup {
+    color: var(--rar-text);
+    background: var(--rar-control-bg-dark);
+}
+
+input[type="datetime-local"].rar-input,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-fields-wrapper,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-text,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-day-field,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-month-field,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-year-field,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-hour-field,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-minute-field,
+input[type="datetime-local"].rar-input::-webkit-calendar-picker-indicator {
+    color: var(--rar-text);
+    background: var(--rar-control-bg-dark);
+}
+
+input[type="datetime-local"].rar-input::-webkit-calendar-picker-indicator {
+    filter: invert(0.75);
+    opacity: 0.85;
+}
+
+input.rar-input:-webkit-autofill,
+.rar-driver-name-input:-webkit-autofill,
+.rar-driver-plan-time:-webkit-autofill {
+    -webkit-text-fill-color: var(--rar-text);
+    box-shadow: 0 0 0 1000px var(--rar-control-bg-dark) inset;
+}
+
+.rar-driver-stats-row span,
+.rar-driver-plan-field {
+    background: var(--rar-control-bg-muted);
+    border-color: var(--rar-control-border-muted);
+}
+
+.rar-driver-name-input,
+.rar-driver-plan-time {
+    appearance: none;
+    -webkit-appearance: none;
+    color: var(--rar-heading) !important;
+    background: var(--rar-control-bg) !important;
+    border-color: var(--rar-control-border) !important;
+}
+
+.rar-driver-name-input:focus,
+.rar-driver-plan-time:focus {
+    color: var(--rar-text-bright) !important;
+    background: var(--rar-control-bg-focus) !important;
+    border-color: var(--rar-primary) !important;
+}
+
+.rar-forecast-lap,
+.rar-forecast-driver-lap {
+    color: var(--rar-muted-strong);
+    background: var(--rar-badge-bg);
+    border-color: var(--rar-border);
+}
+
+.rar-forecast-item.is-current .rar-forecast-lap,
+.rar-forecast-item.is-current .rar-forecast-driver-lap {
+    color: var(--rar-text);
+    background: var(--rar-control-bg);
+    border-color: var(--rar-badge-border-current);
+}
+
+.rar-forecast-item.is-current,
+.rar-forecast-item.is-current.is-last,
+.rar-lap-prognosis,
+.rar-race-config,
+.rar-start-countdown,
+.rar-switch-time-preview,
+.rar-log {
+    background: var(--rar-panel-dark);
+}
+
+.rar-forecast-item.is-last:not(.is-current) {
+    background: var(--rar-warning-bg);
+    border-color: var(--rar-warning-border);
+    border-left-color: var(--rar-warning);
+}
+
+.rar-forecast-last-badge,
+.rar-lap-prognosis em.is-medium {
+    color: var(--rar-text-on-warning);
+    background: var(--rar-warning);
+}
+
+.rar-forecast-remove,
+#undoSwitchBtn {
+    background: var(--rar-neutral-action);
+}
+
+.rar-forecast-remove:hover,
+#undoSwitchBtn:hover {
+    background: var(--rar-neutral-action-hover);
+}
+
+.rar-readonly-badge {
+    color: var(--rar-text-on-warning);
+    background: var(--rar-warning);
+    border-left-color: var(--rar-panel-dark);
+}
+
+.rar-btn-danger {
+    color: var(--rar-text-danger-soft);
+    background: var(--rar-danger-bg);
+}
+
+.rar-btn-danger:hover {
+    background: var(--rar-danger-bg-hover);
+    box-shadow: var(--rar-shadow-strong);
+}
+
+.rar-message {
+    border-left-color: var(--rar-panel-dark);
+}
+
 @media (max-width: 782px) {
     .rar-container {
         margin-top: 10px;
@@ -1175,6 +1197,10 @@ body:has(.rar-public-container) .wp-block-post-title {
 
     .rar-section {
         grid-template-columns: 1fr;
+    }
+
+    .rar-card-forecast {
+        grid-row: auto;
     }
 
     .rar-race-title-row {
@@ -1246,18 +1272,6 @@ body:has(.rar-public-container) .wp-block-post-title {
     #switchDriverBtn,
     #undoSwitchBtn {
         width: 100%;
-    }
-
-    .rar-sequence-editor {
-        grid-template-columns: 1fr;
-    }
-
-    .rar-sequence-editor .rar-btn {
-        justify-self: stretch;
-    }
-
-    .rar-queue-button-row {
-        grid-template-columns: 1fr;
     }
 
     .rar-message {

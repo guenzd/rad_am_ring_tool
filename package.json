@@ -3,8 +3,9 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node --test",
+    "test": "npm run test:js && npm run test:php",
     "test:js": "node --test tests/*.test.js",
+    "test:php": "php tests/race-logic-php.test.php",
     "lint:js": "node --check assets/js/race-logic.js && node --check assets/js/dashboard.js"
   }
 }

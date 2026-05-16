@@ -10,11 +10,8 @@ jQuery(document).ready(function($) {
     let canEdit = !!(window.rarData && window.rarData.canEdit);
     let publicView = $('.rar-public-container').length > 0;
     let focusedDriverOrder = null;
-    let queueEditorState = [];
     let currentForecastItems = null;
-    let rotationSaveTimer = null;
-    let rotationSaveRequest = null;
-    let rotationSaveVersion = 0;
+    let queueOperationChain = $.Deferred().resolve().promise();
     let slowForecastUpdatedAt = 0;
 
     // Load all races on startup
@@ -234,7 +231,6 @@ jQuery(document).ready(function($) {
                     $('#setupSummaryStatus').text(raceData.race.race_name);
                     $('#raceSetupPanel').prop('open', false);
                     $('#rotationSequence').val(raceData.race.rotation_sequence || '');
-                    renderRotationEditor();
                     updateManualTimeInputs();
                     updateRaceConfig();
                     updateExportLink();
@@ -310,17 +306,6 @@ jQuery(document).ready(function($) {
         });
     });
 
-    /**
-     * Save editable driver rotation sequence
-     */
-    $('#saveRotationSequenceBtn').on('click', function() {
-        if (!ensureCanEdit()) {
-            return;
-        }
-
-        saveRotationSequence('Fahrerfolge gespeichert!', true);
-    });
-
     $('#startRaceTimeOkBtn').on('click', function() {
         $('#startRaceBtn').trigger('click');
     });
@@ -369,28 +354,6 @@ jQuery(document).ready(function($) {
 
     $('#manualStartTime').on('input change', function() {
         updateStartRaceButton();
-    });
-
-    $('#clearAllQueuesBtn').on('click', function() {
-        if (!ensureCanEdit()) {
-            return;
-        }
-
-        clearAllQueues();
-    });
-
-    $(document).on('click', '.rar-queue-add-btn', function() {
-        if (!ensureCanEdit()) {
-            return;
-        }
-
-        let driverOrder = parseInt($(this).data('driver-order'), 10);
-
-        if (Number.isNaN(driverOrder)) {
-            return;
-        }
-
-        insertEditorForecastStint(driverOrder, getEditorAppendLapIndex());
     });
 
     $(document).on('click', '.rar-driver-card', function() {
@@ -445,108 +408,6 @@ jQuery(document).ready(function($) {
         $(this).blur();
     });
 
-    $(document).on('click', '.rar-queue-remove', function(event) {
-        event.stopPropagation();
-
-        if (!ensureCanEdit()) {
-            return;
-        }
-
-        let item = $(this).closest('.rar-queue-item, .rar-editor-forecast-item');
-
-        if (item.hasClass('rar-editor-forecast-item')) {
-            removeQueueStint(parseInt(item.data('source-lap'), 10));
-        }
-    });
-
-    $(document).on('click', '.rar-queue-move', function(event) {
-        event.stopPropagation();
-
-        if (!ensureCanEdit()) {
-            return;
-        }
-
-        let direction = $(this).data('direction');
-        let item = $(this).closest('.rar-queue-item, .rar-editor-forecast-item');
-
-        if (item.hasClass('rar-editor-forecast-item')) {
-            let sourceLapIndex = parseInt(item.data('source-lap'), 10);
-            moveEditorForecastStint(
-                sourceLapIndex,
-                direction === 'up' ? sourceLapIndex - 1 : sourceLapIndex + 1
-            );
-        }
-    });
-
-    $(document).on('dragstart', '.rar-queue-driver-chip', function(event) {
-        if (!canEdit) {
-            event.preventDefault();
-            return;
-        }
-
-        event.originalEvent.dataTransfer.setData('text/plain', JSON.stringify({
-            type: 'driver',
-            driverOrder: $(this).data('driver-order')
-        }));
-        event.originalEvent.dataTransfer.effectAllowed = 'copy';
-    });
-
-    $(document).on('dragstart', '.rar-queue-item, .rar-editor-forecast-item', function(event) {
-        if (!canEdit) {
-            event.preventDefault();
-            return;
-        }
-
-        event.originalEvent.dataTransfer.setData('text/plain', JSON.stringify({
-            type: 'queueItem',
-            index: $(this).data('index'),
-            sourceLap: $(this).data('source-lap'),
-            driverOrder: $(this).data('driver-order')
-        }));
-        event.originalEvent.dataTransfer.effectAllowed = 'move';
-    });
-
-    $(document).on('dragover', '.rar-queue-list, .rar-queue-item, .rar-editor-forecast-item', function(event) {
-        event.preventDefault();
-    });
-
-    $(document).on('drop', '.rar-queue-list, .rar-queue-item, .rar-editor-forecast-item', function(event) {
-        event.preventDefault();
-
-        if (!ensureCanEdit()) {
-            return;
-        }
-
-        let payload = JSON.parse(event.originalEvent.dataTransfer.getData('text/plain') || '{}');
-        let targetList = $(this).hasClass('rar-queue-list') ? $(this) : $(this).closest('.rar-queue-list');
-        let targetSourceLap = $(this).hasClass('rar-editor-forecast-item')
-            ? parseInt($(this).data('source-lap'), 10)
-            : null;
-
-        if (payload.type === 'driver') {
-            if (targetList.hasClass('rar-editor-forecast-list')) {
-                insertEditorForecastStint(
-                    parseInt(payload.driverOrder, 10),
-                    !Number.isNaN(targetSourceLap) ? targetSourceLap : getEditorAppendLapIndex()
-                );
-                return;
-            }
-
-            insertEditorForecastStint(parseInt(payload.driverOrder, 10), getEditorAppendLapIndex());
-            return;
-        }
-
-        if (!Number.isNaN(parseInt(payload.sourceLap, 10))) {
-            if (!Number.isNaN(targetSourceLap)) {
-                moveEditorForecastStint(parseInt(payload.sourceLap, 10), targetSourceLap);
-            }
-
-            return;
-        }
-
-        return;
-    });
-
     $(document).on('click', '.rar-forecast-remove', function(event) {
         event.stopPropagation();
 
@@ -582,14 +443,15 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'rar_switch_driver',
                 race_id: currentRaceId,
-                from_driver_id: switchDrivers.from.id,
-                to_driver_id: switchDrivers.to.id,
                 switched_at: $('#manualSwitchTime').val() ? $('#manualSwitchTime').val().replace('T', ' ') : '',
                 nonce: rarData.nonce,
             },
             success: function(response) {
                 if (response.success) {
-                    showMessage(getSwitchActionLabel(switchDrivers) + ': ' + switchDrivers.from.driver_name + ' zu ' + switchDrivers.to.driver_name, 'success');
+                    let fromDriver = response.data.from || switchDrivers.from;
+                    let toDriver = response.data.to || switchDrivers.to;
+
+                    showMessage(getSwitchActionLabel({ from: fromDriver, to: toDriver }) + ': ' + fromDriver.driver_name + ' zu ' + toDriver.driver_name, 'success');
                     loadRaceData();
                 } else {
                     showMessage('Fehler beim Wechsel des Fahrers: ' + response.data, 'error');
@@ -848,7 +710,6 @@ jQuery(document).ready(function($) {
                     }
 
                     updateDriversList();
-                    renderQueueLists();
                     updateSwapForecast();
                     updateLapPrognosis();
                     updateNextSwitchPreview();
@@ -899,8 +760,6 @@ jQuery(document).ready(function($) {
                     }
 
                     updateDriversList();
-                    renderQueueDriverButtons();
-                    renderQueueLists();
                     updateSwapForecast();
                     updateNextSwitchPreview();
                     showMessage('Fahrername gespeichert', 'success');
@@ -965,10 +824,8 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        let completedLaps = getInferredLapStats().completedLaps;
-
         forecastItems.forEach(function(item, index) {
-            html += renderForecastItem(item, index === forecastItems.length - 1, false, completedLaps);
+            html += renderForecastItem(item, index === forecastItems.length - 1);
         });
 
         if (!html && plannedEndTime) {
@@ -1066,81 +923,19 @@ jQuery(document).ready(function($) {
         return (raceData && raceData.race ? raceData.race.rotation_sequence : '') || '';
     }
 
-    function renderRotationEditor() {
-        let sequence = parseRotationSequence($('#rotationSequence').val());
-
-        queueEditorState = expandEditorSequence(sequence);
-
-        renderQueueDriverButtons();
-        renderQueueLists();
-    }
-
-    function renderQueueDriverButtons() {
-        let html = '';
-
-        if (!raceData || !raceData.drivers || raceData.drivers.length === 0) {
-            $('#queueDriverButtons').html('<p>Noch keine Fahrer</p>');
-            return;
-        }
-
-        raceData.drivers.forEach(function(driver) {
-            let label = '#' + driver.driver_order + ' ' + escapeHtml(driver.driver_name);
-
-            html += '<button type="button" class="rar-queue-button-row rar-queue-driver-chip rar-queue-add-btn ' + getDriverColorClass(driver) + '" draggable="true" data-driver-order="' + driver.driver_order + '">' +
-                '<span>' + label + '</span>' +
-                '<small>Anhängen</small>' +
-                '</button>';
-        });
-
-        $('#queueDriverButtons').html(html);
-        applyReadOnlyState();
-    }
-
-    function renderQueueLists() {
-        renderQueueList('#repeatQueue');
-    }
-
-    function renderQueueList(selector) {
-        let html = '';
-        let forecastItems = [];
-
-        if (queueEditorState.length) {
-            forecastItems = (buildForecastItems(getEditorSequence()) || []).filter(function(item) {
-                return item.sourceLapIndex < queueEditorState.length;
-            });
-        }
-
-        if (forecastItems) {
-            let completedLaps = getInferredLapStats().completedLaps;
-
-            forecastItems.forEach(function(item, index) {
-                html += renderForecastItem(item, index === forecastItems.length - 1, true, completedLaps);
-            });
-        }
-
-        if (!html) {
-            html = '<p>Queue leer. Fahrer hier reinziehen oder anklicken.</p>';
-        }
-
-        $(selector).html(html);
-        applyReadOnlyState();
-        applyDriverFocus();
-    }
-
     function syncRotationEditor() {
         $('#rotationSequence').val(serializeRotationEditor());
-        renderQueueLists();
         updateSwapForecast();
         updateLapPrognosis();
         updateNextSwitchPreview();
     }
 
     function serializeRotationEditor() {
-        return queueEditorState.join(',');
+        return getCurrentRotationSequenceValue();
     }
 
     function getEditorSequence() {
-        return queueEditorState.slice();
+        return parseRotationSequence(getCurrentRotationSequenceValue());
     }
 
     function expandEditorSequence(sequence) {
@@ -1149,69 +944,42 @@ jQuery(document).ready(function($) {
         });
     }
 
-    function saveRotationSequence(successMessage, reloadAfterSave) {
+    function saveQueueOperation(operation, args, baseSequence, successMessage) {
         if (!currentRaceId) {
             showMessage('Bitte wählen Sie zuerst ein Rennen', 'error');
             return;
         }
 
-        window.clearTimeout(rotationSaveTimer);
-        rotationSaveVersion += 1;
-        let saveVersion = rotationSaveVersion;
+        let requestData = $.extend({
+            action: 'rar_mutate_rotation_queue',
+            race_id: currentRaceId,
+            operation: operation,
+            rotation_sequence: baseSequence,
+            nonce: rarData.nonce,
+        }, args || {});
 
-        if (rotationSaveRequest && rotationSaveRequest.readyState !== 4) {
-            rotationSaveRequest.abort();
-        }
-
-        rotationSaveRequest = $.ajax({
-            url: rarData.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'rar_save_rotation_sequence',
-                race_id: currentRaceId,
-                rotation_sequence: serializeRotationEditor(),
-                nonce: rarData.nonce,
-            },
-            success: function(response) {
-                if (saveVersion !== rotationSaveVersion) {
-                    return;
-                }
-
+        queueOperationChain = queueOperationChain.then(function() {
+            return $.ajax({
+                url: rarData.ajaxUrl,
+                type: 'POST',
+                data: requestData,
+            }).then(function(response) {
                 if (response.success) {
                     if (raceData && raceData.race) {
                         raceData.race.rotation_sequence = response.data.rotation_sequence;
                     }
 
                     showMessage(successMessage, 'success');
-
-                    if (reloadAfterSave) {
-                        loadRaceData();
-                    }
-                } else {
-                    showMessage('Fehler beim Speichern der Folge: ' + response.data, 'error');
-                }
-            },
-            error: function(xhr, status) {
-                if (status === 'abort') {
                     return;
                 }
 
+                showMessage('Fehler beim Speichern der Folge: ' + response.data, 'error');
+                loadRaceData();
+            }, function() {
                 showMessage('AJAX-Fehler', 'error');
-            }
+                loadRaceData();
+            });
         });
-    }
-
-    function scheduleRotationSequenceSave(successMessage) {
-        window.clearTimeout(rotationSaveTimer);
-
-        rotationSaveTimer = window.setTimeout(function() {
-            saveRotationSequence(successMessage, false);
-        }, 120);
-    }
-
-    function clearAllQueues() {
-        queueEditorState = [];
-        syncRotationEditor();
     }
 
     function quickRemoveQueueStint(queueIndex) {
@@ -1219,10 +987,19 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        queueEditorState = expandEditorSequence(parseRotationSequence(getCurrentRotationSequenceValue()));
+        let previousSequence = getCurrentRotationSequenceValue();
+        let materializeLength = getQuickEditMaterializeLength(queueIndex);
 
-        if (removeQueueStint(queueIndex, getQuickEditMaterializeLength(queueIndex))) {
-            scheduleRotationSequenceSave('Fahrerfolge aktualisiert');
+        let queue = expandEditorSequence(parseRotationSequence(getCurrentRotationSequenceValue()));
+
+        queue = removeQueueStint(queue, queueIndex, materializeLength);
+
+        if (queue) {
+            applyEditorSequence(queue);
+            saveQueueOperation('remove', {
+                index: queueIndex,
+                materialize_length: materializeLength,
+            }, previousSequence, 'Fahrerfolge aktualisiert');
         }
     }
 
@@ -1242,7 +1019,7 @@ jQuery(document).ready(function($) {
         return materializeLength;
     }
 
-    function removeQueueStint(queueIndex, materializeLength) {
+    function removeQueueStint(queue, queueIndex, materializeLength) {
         let completedLaps = getInferredLapStats().completedLaps;
 
         if (
@@ -1252,74 +1029,57 @@ jQuery(document).ready(function($) {
             queueIndex <= completedLaps ||
             queueIndex < 0
         ) {
-            return false;
+            return null;
         }
 
-        ensureEditorLength(materializeLength || queueIndex + 2);
-        let queue = queueEditorState.slice();
+        let targetLength = materializeLength || queueIndex + 2;
+
+        materializeQueue(queue, Math.max(targetLength, queueIndex + 1));
 
         queue.splice(queueIndex, 1);
-        applyEditorSequence(queue);
-        return true;
+        fillQueueAfterRemove(queue, targetLength);
+        return queue;
     }
 
-    function moveEditorForecastStint(sourceLapIndex, targetLapIndex) {
-        let completedLaps = getInferredLapStats().completedLaps;
+    function materializeQueue(queue, length) {
+        while (queue.length < length) {
+            queue.push(getDriverOrderForLap(queue.length, queue));
+        }
+    }
 
-        if (
-            !raceData ||
-            !raceData.drivers ||
-            Number.isNaN(sourceLapIndex) ||
-            Number.isNaN(targetLapIndex) ||
-            sourceLapIndex <= completedLaps ||
-            targetLapIndex <= completedLaps ||
-            sourceLapIndex === targetLapIndex
-        ) {
-            return;
+    function fillQueueAfterRemove(queue, length) {
+        if (queue.length >= length) {
+            queue.splice(Math.max(0, length - 1));
         }
 
-        ensureEditorLength(Math.max(sourceLapIndex, targetLapIndex) + 1);
-        let queue = queueEditorState.slice();
-        let movedDriverOrder = queue.splice(sourceLapIndex, 1)[0];
-        let adjustedTargetIndex = Math.min(targetLapIndex, queue.length);
-
-        queue.splice(adjustedTargetIndex, 0, movedDriverOrder);
-        applyEditorSequence(queue);
+        while (queue.length < length) {
+            queue.push(getNextDefaultDriverOrder(queue));
+        }
     }
 
-    function insertEditorForecastStint(driverOrder, targetLapIndex) {
-        let completedLaps = getInferredLapStats().completedLaps;
-
-        if (!raceData || !raceData.drivers || Number.isNaN(driverOrder) || Number.isNaN(targetLapIndex) || targetLapIndex <= completedLaps) {
-            return;
+    function getNextDefaultDriverOrder(queue) {
+        if (!raceData || !raceData.drivers || raceData.drivers.length === 0) {
+            return NaN;
         }
 
-        ensureEditorLength(targetLapIndex);
-        let queue = queueEditorState.slice();
+        let lastDriverOrder = queue.length ? parseInt(queue[queue.length - 1], 10) : null;
+        let lastDriverIndex = raceData.drivers.findIndex(function(driver) {
+            return parseInt(driver.driver_order, 10) === lastDriverOrder;
+        });
 
-        queue.splice(targetLapIndex, 0, driverOrder);
-        applyEditorSequence(queue);
-    }
-
-    function getEditorAppendLapIndex() {
-        let completedLaps = getInferredLapStats().completedLaps;
-        return Math.max(completedLaps + 1, queueEditorState.length);
-    }
-
-    function ensureEditorLength(length) {
-        let sequence = getEditorSequence();
-
-        while (queueEditorState.length < length) {
-            queueEditorState.push(getDriverOrderForLap(queueEditorState.length, sequence));
-            sequence = queueEditorState.slice();
+        if (lastDriverIndex >= 0) {
+            return parseInt(raceData.drivers[(lastDriverIndex + 1) % raceData.drivers.length].driver_order, 10);
         }
+
+        return parseInt(raceData.drivers[queue.length % raceData.drivers.length].driver_order, 10);
     }
 
     function applyEditorSequence(queue) {
-        queueEditorState = queue.filter(function(driverOrder) {
+        let sequence = queue.filter(function(driverOrder) {
             return !Number.isNaN(driverOrder);
         });
 
+        $('#rotationSequence').val(sequence.join(','));
         syncRotationEditor();
     }
 
@@ -1479,10 +1239,9 @@ jQuery(document).ready(function($) {
         }
 
         $(
-            '#createRaceBtn, #addDriverBtn, #saveRotationSequenceBtn, #startRaceBtn, ' +
+            '#createRaceBtn, #addDriverBtn, #startRaceBtn, ' +
             '#startRaceTimeOkBtn, #switchDriverBtn, ' +
-            '#switchDriverTimeOkBtn, #undoSwitchBtn, #endRaceBtn, #deleteRaceBtn, #clearAllQueuesBtn, ' +
-            '.rar-queue-add-btn, .rar-queue-move, .rar-queue-remove, ' +
+            '#switchDriverTimeOkBtn, #undoSwitchBtn, #endRaceBtn, #deleteRaceBtn, ' +
             '.rar-forecast-remove'
         ).prop('disabled', true);
 
@@ -1492,7 +1251,6 @@ jQuery(document).ready(function($) {
             '#manualSwitchTime, .rar-driver-plan-time, .rar-driver-name-input'
         ).prop('disabled', true);
 
-        $('.rar-queue-item, .rar-editor-forecast-item, .rar-queue-driver-chip').attr('draggable', 'false');
     }
 
     function getDriverById(driverId) {
@@ -1641,23 +1399,13 @@ jQuery(document).ready(function($) {
         return forecastItems;
     }
 
-    function renderForecastItem(item, isLast, isEditable, completedLaps) {
+    function renderForecastItem(item, isLast) {
         let classes = 'rar-forecast-item ' + getDriverColorClass(item.driver) +
             (item.isCurrent ? ' is-current' : '') +
             (item.isFinal ? ' is-final' : '') +
-            (isLast ? ' is-last' : '') +
-            (isEditable ? ' rar-editor-forecast-item' : '');
+            (isLast ? ' is-last' : '');
         let attrs = ' data-driver-order="' + item.driver.driver_order + '"';
-        completedLaps = typeof completedLaps === 'number' ? completedLaps : getInferredLapStats().completedLaps;
-        let isEditableFutureStint = isEditable && !item.isCurrent && item.sourceLapIndex > completedLaps;
-        let canMoveUp = isEditableFutureStint && item.sourceLapIndex > completedLaps + 1;
-        let canMoveDown = isEditableFutureStint;
-        let canRemoveEditorStint = isEditableFutureStint;
         let canRemove = canEdit && !item.isCurrent && item.queueIndex !== null && item.queueIndex !== undefined;
-
-        if (isEditableFutureStint) {
-            attrs += ' draggable="true" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '"';
-        }
 
         let lapNumber = item.sourceLapIndex !== null && item.sourceLapIndex !== undefined
             ? item.sourceLapIndex + 1
@@ -1665,15 +1413,12 @@ jQuery(document).ready(function($) {
 
         return '<div class="' + classes + '"' + attrs + '>' +
             '<div class="rar-forecast-main">' +
-                (isEditableFutureStint ? '<span class="rar-queue-grip">::</span>' : '') +
                 '<span class="rar-forecast-order">#' + item.driver.driver_order + '</span>' +
                 '<span class="rar-forecast-name">' + escapeHtml(item.driver.driver_name) + '</span>' +
                 (lapNumber ? '<span class="rar-forecast-lap">R ' + lapNumber + '</span>' : '') +
                 (item.driverLapNumber ? '<span class="rar-forecast-driver-lap">FR ' + item.driverLapNumber + '</span>' : '') +
                 (isLast ? '<span class="rar-forecast-last-badge">Letzter Fahrer</span>' : '') +
-                (canMoveUp ? '<button type="button" class="rar-mini-icon rar-queue-move" data-direction="up">↑</button>' : '') +
-                (canMoveDown ? '<button type="button" class="rar-mini-icon rar-queue-move" data-direction="down">↓</button>' : '') +
-                (canRemoveEditorStint || (!isEditable && canRemove) ? '<button type="button" class="' + (isEditable ? 'rar-mini-icon rar-queue-remove' : 'rar-forecast-remove') + '" data-driver-order="' + item.driver.driver_order + '" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '" aria-label="Stint aus Folge entfernen">-</button>' : '') +
+                (canRemove ? '<button type="button" class="rar-forecast-remove" data-driver-order="' + item.driver.driver_order + '" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '" aria-label="Stint aus Folge entfernen">-</button>' : '') +
             '</div>' +
             '<div class="rar-forecast-meta">' +
                 '<span>' + (item.isFinal ? 'Zielrunde ' : '') + formatTime(item.time) + '</span>' +
@@ -1814,7 +1559,6 @@ jQuery(document).ready(function($) {
             if (Date.now() - slowForecastUpdatedAt >= 60000) {
                 slowForecastUpdatedAt = Date.now();
                 updateDriversList();
-                renderQueueLists();
                 updateSwapForecast();
                 updateLapPrognosis();
             }

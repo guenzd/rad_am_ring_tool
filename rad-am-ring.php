@@ -22,6 +22,7 @@ define( 'RAR_DB_VERSION', '0.5.0' );
 
 // Include required files
 require_once RAR_PLUGIN_DIR . 'includes/class-database.php';
+require_once RAR_PLUGIN_DIR . 'includes/class-race-logic.php';
 require_once RAR_PLUGIN_DIR . 'includes/class-admin-dashboard.php';
 require_once RAR_PLUGIN_DIR . 'includes/class-public-dashboard.php';
 
@@ -141,6 +142,7 @@ add_action( 'wp_ajax_rar_update_driver_name', 'rar_ajax_update_driver_name' );
 add_action( 'wp_ajax_rar_end_race', 'rar_ajax_end_race' );
 add_action( 'wp_ajax_rar_get_all_races', 'rar_ajax_get_all_races' );
 add_action( 'wp_ajax_rar_save_rotation_sequence', 'rar_ajax_save_rotation_sequence' );
+add_action( 'wp_ajax_rar_mutate_rotation_queue', 'rar_ajax_mutate_rotation_queue' );
 add_action( 'wp_ajax_rar_start_race', 'rar_ajax_start_race' );
 add_action( 'wp_ajax_rar_undo_driver_switch', 'rar_ajax_undo_driver_switch' );
 add_action( 'wp_ajax_rar_export_race', 'rar_ajax_export_race' );
@@ -299,16 +301,20 @@ function rar_ajax_switch_driver() {
     rar_require_edit_access();
 
     $race_id = intval( $_POST['race_id'] ?? 0 );
-    $from_driver_id = intval( $_POST['from_driver_id'] ?? 0 );
-    $to_driver_id = intval( $_POST['to_driver_id'] ?? 0 );
     $switched_at_input = sanitize_text_field( wp_unslash( $_POST['switched_at'] ?? '' ) );
 
-    if ( ! $race_id || ! $from_driver_id || ! $to_driver_id ) {
+    if ( ! $race_id ) {
         wp_send_json_error( 'Ungültige Daten' );
     }
 
-    if ( ! RAR_Database::drivers_belong_to_race( $race_id, [ $from_driver_id, $to_driver_id ] ) ) {
-        wp_send_json_error( 'Fahrer gehören nicht zu diesem Rennen' );
+    $data = RAR_Database::get_race_data( $race_id );
+    if ( empty( $data['race'] ) ) {
+        wp_send_json_error( 'Rennen nicht gefunden' );
+    }
+
+    $switch_drivers = RAR_Race_Logic::get_next_switch_drivers( $data );
+    if ( ! $switch_drivers ) {
+        wp_send_json_error( 'Kein Fahrerwechsel möglich' );
     }
 
     $switched_at = current_time( 'mysql' );
@@ -320,8 +326,28 @@ function rar_ajax_switch_driver() {
         $switched_at = $switched_at_datetime->format( 'Y-m-d H:i:s' );
     }
 
-    RAR_Database::record_driver_switch( $race_id, $from_driver_id, $to_driver_id, $switched_at );
-    wp_send_json_success( [ 'switched' => true ] );
+    RAR_Database::record_driver_switch(
+        $race_id,
+        intval( $switch_drivers['from']->id ),
+        intval( $switch_drivers['to']->id ),
+        $switched_at
+    );
+
+    wp_send_json_success(
+        [
+            'switched' => true,
+            'from'     => [
+                'id'           => intval( $switch_drivers['from']->id ),
+                'driver_name'  => $switch_drivers['from']->driver_name,
+                'driver_order' => intval( $switch_drivers['from']->driver_order ),
+            ],
+            'to'       => [
+                'id'           => intval( $switch_drivers['to']->id ),
+                'driver_name'  => $switch_drivers['to']->driver_name,
+                'driver_order' => intval( $switch_drivers['to']->driver_order ),
+            ],
+        ]
+    );
 }
 
 function rar_ajax_get_race_data() {
@@ -506,6 +532,56 @@ function rar_ajax_save_rotation_sequence() {
         wp_send_json_error( 'Ungültige Daten' );
     }
 
+    $validation_error = RAR_Database::validate_rotation_sequence( $race_id, $rotation_sequence );
+    if ( $validation_error ) {
+        wp_send_json_error( $validation_error );
+    }
+
+    RAR_Database::save_rotation_sequence( $race_id, $rotation_sequence );
+    wp_send_json_success( [ 'rotation_sequence' => $rotation_sequence ] );
+}
+
+function rar_ajax_mutate_rotation_queue() {
+    if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rar_nonce' ) ) {
+        wp_send_json_error( 'Sicherheitsüberprüfung fehlgeschlagen' );
+    }
+
+    rar_require_edit_access();
+
+    $race_id = intval( $_POST['race_id'] ?? 0 );
+    $operation = sanitize_key( $_POST['operation'] ?? '' );
+    $rotation_sequence = sanitize_text_field( wp_unslash( $_POST['rotation_sequence'] ?? '' ) );
+
+    if ( ! $race_id || ! $operation ) {
+        wp_send_json_error( 'Ungültige Daten' );
+    }
+
+    $data = RAR_Database::get_race_data( $race_id );
+    if ( empty( $data['race'] ) ) {
+        wp_send_json_error( 'Rennen nicht gefunden' );
+    }
+
+    $args = [
+        'index'              => intval( $_POST['index'] ?? -1 ),
+        'source_index'       => intval( $_POST['source_index'] ?? -1 ),
+        'target_index'       => intval( $_POST['target_index'] ?? -1 ),
+        'driver_order'       => intval( $_POST['driver_order'] ?? 0 ),
+        'materialize_length' => intval( $_POST['materialize_length'] ?? 0 ),
+    ];
+
+    try {
+        $queue = RAR_Race_Logic::mutate_queue(
+            RAR_Race_Logic::parse_rotation_sequence( $rotation_sequence ),
+            $operation,
+            $args,
+            $data['drivers'],
+            count( $data['rotations'] )
+        );
+    } catch ( InvalidArgumentException $exception ) {
+        wp_send_json_error( $exception->getMessage() );
+    }
+
+    $rotation_sequence = RAR_Race_Logic::serialize_rotation_sequence( $queue );
     $validation_error = RAR_Database::validate_rotation_sequence( $race_id, $rotation_sequence );
     if ( $validation_error ) {
         wp_send_json_error( $validation_error );

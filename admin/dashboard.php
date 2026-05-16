@@ -82,6 +82,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
         <!-- Active Race Display -->
         <div id="raceContent" class="rar-section" style="display: none;">
+            <input type="hidden" id="rotationSequence">
             <div class="rar-race-title-row">
                 <h2 id="activeRaceName"></h2>
                 <div class="rar-race-title-actions">
@@ -127,29 +128,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <div id="driversList" class="rar-drivers-list"></div>
             </div>
 
-            <!-- Rotation Editor -->
-            <div class="rar-card rar-card-sequence-edit">
-                <h3>Fahrerfolge</h3>
-                <details class="rar-sequence-panel" open>
-                    <summary>Fahrerfolge bearbeiten</summary>
-                    <div class="rar-sequence-editor">
-                        <input type="hidden" id="rotationSequence">
-                        <div class="rar-queue-builder">
-                            <div class="rar-queue-preview">
-                                <div class="rar-queue-heading">
-                                    <h4>Aktuelle Fahrer-Queue</h4>
-                                    <button type="button" id="clearAllQueuesBtn" class="rar-mini-btn rar-queue-clear-all">Alles leeren</button>
-                                </div>
-                                <div id="repeatQueue" class="rar-queue-list rar-editor-forecast-list" data-queue="repeat"></div>
-                            </div>
-                            <div class="rar-queue-add">
-                                <h4>Fahrer anhängen</h4>
-                                <div id="queueDriverButtons" class="rar-queue-buttons"></div>
-                            </div>
-                        </div>
-                        <button id="saveRotationSequenceBtn" class="rar-btn rar-btn-secondary">Folge speichern</button>
-                    </div>
-                </details>
+            <!-- End Race -->
+            <div class="rar-card">
+                <a id="exportRaceBtn" class="rar-btn rar-btn-success rar-btn-full" href="#" style="display: none;">Excel Export</a>
+                <button id="endRaceBtn" class="rar-btn rar-btn-danger">Rennsitzung beenden</button>
             </div>
 
             <!-- Driver Switches Log -->
@@ -157,12 +139,6 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <summary>Wechsel-Verlauf</summary>
                 <div id="switchLog" class="rar-log"></div>
             </details>
-
-            <!-- End Race -->
-            <div class="rar-card">
-                <a id="exportRaceBtn" class="rar-btn rar-btn-success rar-btn-full" href="#" style="display: none;">Excel Export</a>
-                <button id="endRaceBtn" class="rar-btn rar-btn-danger">Rennsitzung beenden</button>
-            </div>
         </div>
     </div>
 </div>
