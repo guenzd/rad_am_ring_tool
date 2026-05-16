@@ -5,7 +5,6 @@
     --rar-page-bg: #0d1117;
     --rar-surface: #161b22;
     --rar-surface-soft: #21262d;
-    --rar-surface-dark: #010409;
     --rar-panel-dark: #05070a;
     --rar-control-bg: #1f2937;
     --rar-control-bg-muted: #0b1118;
@@ -53,7 +52,7 @@
     --rar-driver-green: #25d366;
     --rar-driver-green-bg: #123421;
     --rar-driver-green-border: #29935a;
-    --rar-driver-yellow: #f4c542;
+    --rar-driver-yellow: var(--rar-warning);
     --rar-driver-yellow-bg: #352b12;
     --rar-driver-yellow-border: #a98322;
     --rar-driver-red: #ff6b5f;
