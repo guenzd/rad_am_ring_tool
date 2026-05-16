@@ -11,7 +11,11 @@ jQuery(document).ready(function($) {
     let publicView = $('.rar-public-container').length > 0;
     let focusedDriverOrder = null;
     let queueEditorState = [];
-    let skippedForecastLapIndexes = {};
+    let currentForecastItems = null;
+    let rotationSaveTimer = null;
+    let rotationSaveRequest = null;
+    let rotationSaveVersion = 0;
+    let slowForecastUpdatedAt = 0;
 
     // Load all races on startup
     setDefaultRaceTimes();
@@ -224,7 +228,6 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     raceData = response.data;
-                    skippedForecastLapIndexes = {};
                     $('#activeRaceName').text(raceData.race.race_name);
                     $('#setupSummaryStatus').text(raceData.race.race_name);
                     $('#raceSetupPanel').prop('open', false);
@@ -313,33 +316,7 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        if (!currentRaceId) {
-            showMessage('Bitte wählen Sie zuerst ein Rennen', 'error');
-            return;
-        }
-
-        $.ajax({
-            url: rarData.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'rar_save_rotation_sequence',
-                race_id: currentRaceId,
-                rotation_sequence: serializeRotationEditor(),
-                nonce: rarData.nonce,
-            },
-            success: function(response) {
-                if (response.success) {
-                    showMessage('Fahrerfolge gespeichert!', 'success');
-                    skippedForecastLapIndexes = {};
-                    loadRaceData();
-                } else {
-                    showMessage('Fehler beim Speichern der Folge: ' + response.data, 'error');
-                }
-            },
-            error: function() {
-                showMessage('AJAX-Fehler', 'error');
-            }
-        });
+        saveRotationSequence('Fahrerfolge gespeichert!', true);
     });
 
     $('#startRaceTimeOkBtn').on('click', function() {
@@ -476,7 +453,7 @@ jQuery(document).ready(function($) {
         let item = $(this).closest('.rar-queue-item, .rar-editor-forecast-item');
 
         if (item.hasClass('rar-editor-forecast-item')) {
-            removeEditorForecastStint(parseInt(item.data('source-lap'), 10));
+            removeQueueStint(parseInt(item.data('source-lap'), 10));
         }
     });
 
@@ -575,7 +552,7 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        skipForecastStint(parseInt($(this).data('source-lap'), 10));
+        quickRemoveQueueStint(parseInt($(this).data('index'), 10));
     });
 
     /**
@@ -610,7 +587,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    showMessage('Fahrerwechsel: ' + switchDrivers.from.driver_name + ' zu ' + switchDrivers.to.driver_name, 'success');
+                    showMessage(getSwitchActionLabel(switchDrivers) + ': ' + switchDrivers.from.driver_name + ' zu ' + switchDrivers.to.driver_name, 'success');
                     loadRaceData();
                 } else {
                     showMessage('Fehler beim Wechsel des Fahrers: ' + response.data, 'error');
@@ -974,6 +951,7 @@ jQuery(document).ready(function($) {
         let sequence = parseRotationSequence(getCurrentRotationSequenceValue());
         let plannedEndTime = parseWpDate(raceData.race.planned_end_time);
         let forecastItems = buildForecastItems(sequence);
+        currentForecastItems = forecastItems;
 
         if (forecastItems === null) {
             $('#swapForecast').html('<p>Keine Prognose möglich</p>');
@@ -985,8 +963,10 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        let completedLaps = getInferredLapStats().completedLaps;
+
         forecastItems.forEach(function(item, index) {
-            html += renderForecastItem(item, index === forecastItems.length - 1, false);
+            html += renderForecastItem(item, index === forecastItems.length - 1, false, completedLaps);
         });
 
         if (!html && plannedEndTime) {
@@ -1075,7 +1055,13 @@ jQuery(document).ready(function($) {
     }
 
     function getCurrentRotationSequenceValue() {
-        return $('#rotationSequence').val() || (raceData && raceData.race ? raceData.race.rotation_sequence : '') || '';
+        let field = $('#rotationSequence');
+
+        if (field.length) {
+            return field.val() || '';
+        }
+
+        return (raceData && raceData.race ? raceData.race.rotation_sequence : '') || '';
     }
 
     function renderRotationEditor() {
@@ -1123,8 +1109,10 @@ jQuery(document).ready(function($) {
         }
 
         if (forecastItems) {
+            let completedLaps = getInferredLapStats().completedLaps;
+
             forecastItems.forEach(function(item, index) {
-                html += renderForecastItem(item, index === forecastItems.length - 1, true);
+                html += renderForecastItem(item, index === forecastItems.length - 1, true, completedLaps);
             });
         }
 
@@ -1138,7 +1126,6 @@ jQuery(document).ready(function($) {
     }
 
     function syncRotationEditor() {
-        skippedForecastLapIndexes = {};
         $('#rotationSequence').val(serializeRotationEditor());
         renderQueueLists();
         updateSwapForecast();
@@ -1160,35 +1147,118 @@ jQuery(document).ready(function($) {
         });
     }
 
+    function saveRotationSequence(successMessage, reloadAfterSave) {
+        if (!currentRaceId) {
+            showMessage('Bitte wählen Sie zuerst ein Rennen', 'error');
+            return;
+        }
+
+        window.clearTimeout(rotationSaveTimer);
+        rotationSaveVersion += 1;
+        let saveVersion = rotationSaveVersion;
+
+        if (rotationSaveRequest && rotationSaveRequest.readyState !== 4) {
+            rotationSaveRequest.abort();
+        }
+
+        rotationSaveRequest = $.ajax({
+            url: rarData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'rar_save_rotation_sequence',
+                race_id: currentRaceId,
+                rotation_sequence: serializeRotationEditor(),
+                nonce: rarData.nonce,
+            },
+            success: function(response) {
+                if (saveVersion !== rotationSaveVersion) {
+                    return;
+                }
+
+                if (response.success) {
+                    if (raceData && raceData.race) {
+                        raceData.race.rotation_sequence = response.data.rotation_sequence;
+                    }
+
+                    showMessage(successMessage, 'success');
+
+                    if (reloadAfterSave) {
+                        loadRaceData();
+                    }
+                } else {
+                    showMessage('Fehler beim Speichern der Folge: ' + response.data, 'error');
+                }
+            },
+            error: function(xhr, status) {
+                if (status === 'abort') {
+                    return;
+                }
+
+                showMessage('AJAX-Fehler', 'error');
+            }
+        });
+    }
+
+    function scheduleRotationSequenceSave(successMessage) {
+        window.clearTimeout(rotationSaveTimer);
+
+        rotationSaveTimer = window.setTimeout(function() {
+            saveRotationSequence(successMessage, false);
+        }, 120);
+    }
+
     function clearAllQueues() {
         queueEditorState = [];
         syncRotationEditor();
     }
 
-    function skipForecastStint(sourceLapIndex) {
-        if (Number.isNaN(sourceLapIndex)) {
+    function quickRemoveQueueStint(queueIndex) {
+        if (Number.isNaN(queueIndex)) {
             return;
         }
 
-        skippedForecastLapIndexes[sourceLapIndex] = true;
-        updateDriversList();
-        updateSwapForecast();
-        updateLapPrognosis();
-        updateNextSwitchPreview();
+        queueEditorState = expandEditorSequence(parseRotationSequence(getCurrentRotationSequenceValue()));
+
+        if (removeQueueStint(queueIndex, getQuickEditMaterializeLength(queueIndex))) {
+            scheduleRotationSequenceSave('Fahrerfolge aktualisiert');
+        }
     }
 
-    function removeEditorForecastStint(sourceLapIndex) {
-        let completedLaps = getInferredLapStats().completedLaps;
+    function getQuickEditMaterializeLength(queueIndex) {
+        let materializeLength = queueIndex + 2;
+        let forecastItems = currentForecastItems || buildForecastItems(parseRotationSequence(getCurrentRotationSequenceValue()));
 
-        if (!raceData || !raceData.drivers || Number.isNaN(sourceLapIndex) || sourceLapIndex <= completedLaps) {
-            return;
+        if (forecastItems && forecastItems.length > 0) {
+            let lastForecastItem = forecastItems[forecastItems.length - 1];
+            let lastQueueIndex = parseInt(lastForecastItem.queueIndex, 10);
+
+            if (!Number.isNaN(lastQueueIndex)) {
+                materializeLength = Math.max(materializeLength, lastQueueIndex + 2);
+            }
         }
 
-        ensureEditorLength(sourceLapIndex + 1);
+        return materializeLength;
+    }
+
+    function removeQueueStint(queueIndex, materializeLength) {
+        let completedLaps = getInferredLapStats().completedLaps;
+
+        if (
+            !raceData ||
+            !raceData.drivers ||
+            Number.isNaN(queueIndex) ||
+            queueIndex <= completedLaps ||
+            queueIndex < 0
+        ) {
+            return false;
+        }
+
+        ensureEditorLength(materializeLength || queueIndex + 2);
         let queue = queueEditorState.slice();
 
-        queue.splice(sourceLapIndex, 1);
+        queue.splice(queueIndex, 1);
         applyEditorSequence(queue);
+        return true;
     }
 
     function moveEditorForecastStint(sourceLapIndex, targetLapIndex) {
@@ -1369,23 +1439,15 @@ jQuery(document).ready(function($) {
             return null;
         }
 
-        let forecastItems = buildForecastItems(parseRotationSequence(getCurrentRotationSequenceValue()));
+        let forecastItems = currentForecastItems || buildForecastItems(parseRotationSequence(getCurrentRotationSequenceValue()));
 
-        if (!forecastItems) {
-            return switchDrivers;
-        }
-
-        let nextItem = forecastItems.find(function(item) {
-            return parseInt(item.driver.id, 10) !== parseInt(switchDrivers.from.id, 10);
-        });
-
-        if (!nextItem) {
+        if (!forecastItems || forecastItems.length < 2) {
             return switchDrivers;
         }
 
         return {
-            from: switchDrivers.from,
-            to: nextItem.driver
+            from: forecastItems[0].driver,
+            to: forecastItems[1].driver
         };
     }
 
@@ -1525,10 +1587,6 @@ jQuery(document).ready(function($) {
         for (let i = 0; forecastItems.length < forecastCount && i < forecastCount + 200; i++) {
             let lapIndex = recordedLaps + i;
 
-            if (skippedForecastLapIndexes[lapIndex]) {
-                continue;
-            }
-
             let driver = getDriverForLap(lapIndex, raceData.drivers, sequence);
 
             if (!driver) {
@@ -1570,7 +1628,7 @@ jQuery(document).ready(function($) {
                 time: projectedTime,
                 isCurrent: forecastItems.length === 0,
                 isFinal: isFinalLap,
-                queueIndex: lapIndex < sequence.length ? lapIndex : null
+                queueIndex: lapIndex
             });
 
             if (isFinalLap) {
@@ -1581,19 +1639,19 @@ jQuery(document).ready(function($) {
         return forecastItems;
     }
 
-    function renderForecastItem(item, isLast, isEditable) {
+    function renderForecastItem(item, isLast, isEditable, completedLaps) {
         let classes = 'rar-forecast-item ' + getDriverColorClass(item.driver) +
             (item.isCurrent ? ' is-current' : '') +
             (item.isFinal ? ' is-final' : '') +
             (isLast ? ' is-last' : '') +
             (isEditable ? ' rar-editor-forecast-item' : '');
         let attrs = ' data-driver-order="' + item.driver.driver_order + '"';
-        let completedLaps = getInferredLapStats().completedLaps;
+        completedLaps = typeof completedLaps === 'number' ? completedLaps : getInferredLapStats().completedLaps;
         let isEditableFutureStint = isEditable && !item.isCurrent && item.sourceLapIndex > completedLaps;
         let canMoveUp = isEditableFutureStint && item.sourceLapIndex > completedLaps + 1;
         let canMoveDown = isEditableFutureStint;
         let canRemoveEditorStint = isEditableFutureStint;
-        let canRemove = canEdit && !item.isCurrent && item.sourceLapIndex !== null && item.sourceLapIndex !== undefined;
+        let canRemove = canEdit && !item.isCurrent && item.queueIndex !== null && item.queueIndex !== undefined;
 
         if (isEditableFutureStint) {
             attrs += ' draggable="true" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '"';
@@ -1629,17 +1687,27 @@ jQuery(document).ready(function($) {
             $('#nextSwitchPreview').text('Noch kein Wechsel möglich');
             $('#nextSwitchTimePreview').text('Keine Prognose verfügbar');
             $('#switchDriverBtn').prop('disabled', true);
+            $('#switchDriverBtn').text('Fahrerwechsel');
             applyReadOnlyState();
             return;
         }
 
         $('#nextSwitchPreview').html(
             renderSwitchDriverPreview('Aktuell', switchDrivers.from, false) +
-            renderSwitchDriverPreview('Nächster', switchDrivers.to, true)
+            renderSwitchDriverPreview(isSameSwitchDriver(switchDrivers) ? 'Nochmal' : 'Nächster', switchDrivers.to, true)
         );
         updateNextSwitchTimePreview(switchDrivers);
         $('#switchDriverBtn').prop('disabled', false);
+        $('#switchDriverBtn').text(getSwitchActionLabel(switchDrivers));
         applyReadOnlyState();
+    }
+
+    function isSameSwitchDriver(switchDrivers) {
+        return switchDrivers && parseInt(switchDrivers.from.id, 10) === parseInt(switchDrivers.to.id, 10);
+    }
+
+    function getSwitchActionLabel(switchDrivers) {
+        return isSameSwitchDriver(switchDrivers) ? 'Nächste Runde' : 'Fahrerwechsel';
     }
 
     function renderSwitchDriverPreview(label, driver, isNext) {
@@ -1658,10 +1726,18 @@ jQuery(document).ready(function($) {
         }
 
         $('#nextSwitchTimePreview').html(
-            '<span>' + (prognosis.isFinal ? 'Ziel-Prognose' : 'Wechsel-Prognose') + '</span>' +
+            '<span>' + getSwitchTimePreviewLabel(switchDrivers, prognosis) + '</span>' +
             '<strong>' + formatTime(prognosis.time) + '</strong>' +
             '<em>' + formatCountdown(prognosis.time) + '</em>'
         );
+    }
+
+    function getSwitchTimePreviewLabel(switchDrivers, prognosis) {
+        if (prognosis.isFinal) {
+            return 'Ziel-Prognose';
+        }
+
+        return isSameSwitchDriver(switchDrivers) ? 'Nächste Runde' : 'Wechsel-Prognose';
     }
 
     function getNextSwitchPrognosis(switchDrivers) {
@@ -1728,13 +1804,18 @@ jQuery(document).ready(function($) {
 
     function startForecastTimer() {
         stopForecastTimer();
+        slowForecastUpdatedAt = Date.now();
         forecastTimer = setInterval(function() {
-            updateDriversList();
-            renderQueueLists();
-            updateSwapForecast();
-            updateLapPrognosis();
             updateNextSwitchPreview();
             updateStartRaceButton();
+
+            if (Date.now() - slowForecastUpdatedAt >= 60000) {
+                slowForecastUpdatedAt = Date.now();
+                updateDriversList();
+                renderQueueLists();
+                updateSwapForecast();
+                updateLapPrognosis();
+            }
         }, 1000);
     }
 

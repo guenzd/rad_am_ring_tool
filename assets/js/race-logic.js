@@ -177,7 +177,7 @@
     }
 
     function getNextSwitchDrivers(raceData, rotationSequenceValue, parseDate) {
-        if (!raceData || !raceData.drivers || raceData.drivers.length < 2) {
+        if (!raceData || !raceData.drivers || raceData.drivers.length === 0) {
             return null;
         }
 
@@ -193,7 +193,7 @@
 
         let toDriver = getNextQueuedDriver(raceData.drivers, fromDriver, completedLaps, sequence);
 
-        if (!fromDriver || !toDriver || parseInt(fromDriver.id, 10) === parseInt(toDriver.id, 10)) {
+        if (!fromDriver || !toDriver) {
             return null;
         }
 
@@ -204,19 +204,7 @@
     }
 
     function getNextQueuedDriver(drivers, fromDriver, completedLaps, sequence) {
-        return getNextDifferentDriver(drivers, completedLaps + 1, fromDriver, sequence);
-    }
-
-    function getNextDifferentDriver(drivers, startLapIndex, fromDriver, sequence) {
-        for (let offset = 0; offset < drivers.length + 20; offset++) {
-            let candidate = getDriverForLap(startLapIndex + offset, drivers, sequence);
-
-            if (candidate && (!fromDriver || parseInt(candidate.id, 10) !== parseInt(fromDriver.id, 10))) {
-                return candidate;
-            }
-        }
-
-        return null;
+        return getDriverForLap(completedLaps + 1, drivers, sequence);
     }
 
     function getDriverById(drivers, driverId) {

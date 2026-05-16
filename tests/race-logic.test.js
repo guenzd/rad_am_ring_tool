@@ -119,7 +119,7 @@ test('flat queue is respected after the race has already started', () => {
     assert.equal(switchPair(data, '1,2,3,4,3,4,1,2'), '4->3');
 });
 
-test('queue reordering can intentionally change the next driver', () => {
+test('queue reordering can intentionally keep the same driver for another stint', () => {
     const data = raceData({
         rotations: [
             { id: 1, from_driver_id: 1, to_driver_id: 2, switched_at: '2026-05-01 10:52:00' },
@@ -128,23 +128,23 @@ test('queue reordering can intentionally change the next driver', () => {
         ]
     });
 
-    assert.equal(switchPair(data, '4,3,2,1,4,3,2,1'), '4->3');
+    assert.equal(switchPair(data, '4,3,2,1,4,3,2,1'), '4->4');
 });
 
-test('does not switch from a driver to the same driver when queue contains duplicates', () => {
+test('double stints keep the same driver as the next queue entry', () => {
     const data = raceData({
         rotations: [
             { id: 1, from_driver_id: 1, to_driver_id: 2, switched_at: '2026-05-01 10:52:00' }
         ]
     });
 
-    assert.equal(switchPair(data, '1,2,2,2,3,1,2,3,4'), '2->3');
+    assert.equal(switchPair(data, '1,2,2,2,3,1,2,3,4'), '2->2');
 });
 
-test('returns null when fewer than two drivers exist', () => {
+test('single-driver queue can advance to the next round', () => {
     const data = raceData({ drivers: drivers(1) });
 
-    assert.equal(logic.getNextSwitchDrivers(data, '1', parseDate), null);
+    assert.equal(switchPair(data, '1,1'), '1->1');
 });
 
 test('sorts rotations by switch time and then id', () => {
