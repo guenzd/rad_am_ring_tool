@@ -157,6 +157,26 @@ function rar_current_user_can_edit() {
     return current_user_can( 'manage_options' );
 }
 
+function rar_get_public_race_id() {
+    $races = RAR_Database::get_all_races();
+
+    if ( empty( $races ) ) {
+        return 0;
+    }
+
+    return intval( $races[0]->id );
+}
+
+function rar_require_public_race_access( $race_id ) {
+    if ( is_user_logged_in() ) {
+        return;
+    }
+
+    if ( intval( $race_id ) !== rar_get_public_race_id() ) {
+        wp_send_json_error( 'Nicht autorisiert' );
+    }
+}
+
 function rar_require_view_access() {
     if ( ! rar_current_user_can_view() ) {
         wp_send_json_error( 'Nicht autorisiert' );
@@ -263,6 +283,10 @@ function rar_ajax_record_lap() {
         wp_send_json_error( 'Ungültige Daten' );
     }
 
+    if ( ! RAR_Database::drivers_belong_to_race( $race_id, [ $driver_id ] ) ) {
+        wp_send_json_error( 'Fahrer gehört nicht zu diesem Rennen' );
+    }
+
     $lap_id = RAR_Database::record_lap( $driver_id, $race_id, $lap_time );
     wp_send_json_success( [ 'lap_id' => $lap_id ] );
 }
@@ -281,6 +305,10 @@ function rar_ajax_switch_driver() {
 
     if ( ! $race_id || ! $from_driver_id || ! $to_driver_id ) {
         wp_send_json_error( 'Ungültige Daten' );
+    }
+
+    if ( ! RAR_Database::drivers_belong_to_race( $race_id, [ $from_driver_id, $to_driver_id ] ) ) {
+        wp_send_json_error( 'Fahrer gehören nicht zu diesem Rennen' );
     }
 
     $switched_at = current_time( 'mysql' );
@@ -308,6 +336,8 @@ function rar_ajax_get_race_data() {
         wp_send_json_error( 'Rennen-ID erforderlich' );
     }
 
+    rar_require_public_race_access( $race_id );
+
     $data = RAR_Database::get_race_data( $race_id );
     wp_send_json_success( $data );
 }
@@ -324,6 +354,12 @@ function rar_ajax_get_prognosis() {
 
     if ( ! $driver_id || ! $race_id ) {
         wp_send_json_error( 'Ungültige Daten' );
+    }
+
+    rar_require_public_race_access( $race_id );
+
+    if ( ! RAR_Database::drivers_belong_to_race( $race_id, [ $driver_id ] ) ) {
+        wp_send_json_error( 'Fahrer gehört nicht zu diesem Rennen' );
     }
 
     $avg_lap_time = RAR_Database::get_average_lap_time( $driver_id, $race_id );
@@ -449,6 +485,10 @@ function rar_ajax_get_all_races() {
     rar_require_view_access();
 
     $races = RAR_Database::get_all_races();
+    if ( ! is_user_logged_in() ) {
+        $races = array_slice( $races, 0, 1 );
+    }
+
     wp_send_json_success( [ 'races' => $races ] );
 }
 

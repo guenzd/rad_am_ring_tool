@@ -41,7 +41,9 @@ jQuery(document).ready(function($) {
                     $('#raceSelect').empty().append('<option value="">-- Rennen wählen --</option>');
                     races.forEach(function(race) {
                         $('#raceSelect').append(
-                            '<option value="' + race.id + '">' + race.race_name + ' (' + race.start_time + ')</option>'
+                            $('<option>')
+                                .val(race.id)
+                                .text(race.race_name + ' (' + race.start_time + ')')
                         );
                     });
                     updateDeleteRaceButton();
@@ -1792,8 +1794,8 @@ jQuery(document).ready(function($) {
             $('#undoSwitchBtn').prop('disabled', false);
             raceData.rotations.forEach(function(rotation) {
                 html += '<div class="rar-log-entry">' +
-                    rotation.from_driver + ' zu ' + rotation.to_driver + 
-                    ' (' + rotation.switched_at + ')' +
+                    escapeHtml(rotation.from_driver || '') + ' zu ' + escapeHtml(rotation.to_driver || '') +
+                    ' (' + escapeHtml(rotation.switched_at || '') + ')' +
                     '</div>';
             });
         }
@@ -1898,7 +1900,10 @@ jQuery(document).ready(function($) {
      * Show message
      */
     function showMessage(message, type) {
-        let msg = $('<div class="rar-message ' + type + '">' + message + '</div>');
+        let msg = $('<div class="rar-message">')
+            .addClass(type)
+            .text(message);
+
         $('body').prepend(msg);
         
         setTimeout(function() {

@@ -237,6 +237,27 @@ class RAR_Database {
     }
 
     /**
+     * Check whether all provided driver IDs belong to a race.
+     */
+    public static function drivers_belong_to_race( $race_id, $driver_ids ) {
+        global $wpdb;
+
+        $driver_ids = array_values( array_unique( array_filter( array_map( 'intval', (array) $driver_ids ) ) ) );
+        if ( empty( $driver_ids ) ) {
+            return false;
+        }
+
+        $placeholders = implode( ',', array_fill( 0, count( $driver_ids ), '%d' ) );
+        $query_args = array_merge( [ intval( $race_id ) ], $driver_ids );
+        $found = intval( $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}rar_drivers WHERE race_id = %d AND id IN ($placeholders)",
+            $query_args
+        ) ) );
+
+        return count( $driver_ids ) === $found;
+    }
+
+    /**
      * Save a race-specific rotation sequence.
      */
     public static function save_rotation_sequence( $race_id, $rotation_sequence ) {
