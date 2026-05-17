@@ -27,11 +27,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </label>
                     <label class="rar-field">
                         <span>Startzeit</span>
-                        <input type="datetime-local" id="raceStartTime" class="rar-input" required>
+                        <input type="datetime-local" id="raceStartTime" class="rar-input" step="1" required>
                     </label>
                     <label class="rar-field">
                         <span>Cutoff / Zielzeit</span>
-                        <input type="datetime-local" id="plannedEndTime" class="rar-input" required>
+                        <input type="datetime-local" id="plannedEndTime" class="rar-input" step="1" required>
                     </label>
                     <label class="rar-field">
                         <span>Offset erste Runde (Minuten)</span>
@@ -90,7 +90,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <div class="rar-switch-time-row">
                             <label class="rar-field rar-switch-time">
                                 <span id="manualSwitchTimeLabel">Wechselzeit nachträglich korrigieren</span>
-                                <input type="datetime-local" id="manualSwitchTime" class="rar-input">
+                                <input type="datetime-local" id="manualSwitchTime" class="rar-input" step="1">
                             </label>
                             <button type="button" id="switchDriverTimeOkBtn" class="rar-btn rar-btn-secondary">OK</button>
                         </div>

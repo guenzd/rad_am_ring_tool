@@ -339,7 +339,7 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'rar_start_race',
                 race_id: currentRaceId,
-                start_time: isCorrection ? manualStartTime.replace('T', ' ') : '',
+                start_time: isCorrection ? getManualSwitchTimeMysqlValue() : '',
                 nonce: rarData.nonce,
             },
             success: function(response) {
@@ -439,6 +439,11 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
+            saveRaceStartTime();
+            return;
+        }
+
         let switchDrivers = getNextSwitchDrivers();
 
         if (!switchDrivers) {
@@ -452,7 +457,7 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'rar_switch_driver',
                 race_id: currentRaceId,
-                switched_at: $('#manualSwitchTime').val() ? $('#manualSwitchTime').val().replace('T', ' ') : '',
+                switched_at: getManualSwitchTimeMysqlValue(),
                 nonce: rarData.nonce,
             },
             success: function(response) {
@@ -471,6 +476,11 @@ jQuery(document).ready(function($) {
 
     $('#undoSwitchBtn').on('click', function() {
         if (!ensureCanEdit()) {
+            return;
+        }
+
+        if (isRaceStartAdjustmentMode()) {
+            saveRaceStartTime();
             return;
         }
 
@@ -595,6 +605,22 @@ jQuery(document).ready(function($) {
         applyReadOnlyState();
     }
 
+    function getManualSwitchTimeMysqlValue() {
+        let value = $('#manualSwitchTime').val();
+
+        if (!value) {
+            return '';
+        }
+
+        let normalizedValue = value.replace('T', ' ');
+
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(normalizedValue)) {
+            return normalizedValue + ':00';
+        }
+
+        return normalizedValue;
+    }
+
     function updateSwitchTimeControls() {
         let $switchButton = $('#switchDriverBtn');
         let $okButton = $('#switchDriverTimeOkBtn');
@@ -616,21 +642,31 @@ jQuery(document).ready(function($) {
         if (startAdjustmentMode) {
             $label.text('Rennstart anpassen');
             $okButton.prop('disabled', false);
-            $switchButton.prop('disabled', false).text(isCorrection ? 'Startzeit korrigieren' : 'Rennen jetzt starten');
-            updateRaceStartCountdown(startTime);
+            $('#undoSwitchBtn').prop('disabled', false).text('Rennstart korrigieren');
+
+            if (isBeforeRaceStart()) {
+                $switchButton.prop('disabled', false).text(isCorrection ? 'Startzeit korrigieren' : 'Rennen jetzt starten');
+                updateRaceStartCountdown(startTime);
+            }
+
             applyReadOnlyState();
             return;
         }
 
         $label.text('Wechselzeit nachträglich korrigieren');
         $okButton.prop('disabled', false);
+        $('#undoSwitchBtn').text('Letzten Fahrerwechsel rückgängig');
         applyReadOnlyState();
     }
 
     function isRaceStartAdjustmentMode() {
+        return !!(raceData && raceData.race && (!raceData.rotations || raceData.rotations.length === 0));
+    }
+
+    function isBeforeRaceStart() {
         let startTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
 
-        return !!(startTime && Date.now() < startTime.getTime() && (!raceData.rotations || raceData.rotations.length === 0));
+        return !!(startTime && Date.now() < startTime.getTime());
     }
 
     function updateRaceStartCountdown(startTime) {
@@ -776,6 +812,7 @@ jQuery(document).ready(function($) {
                         driver.driver_name = response.data.driver_name;
                     }
 
+                    $input.prop('disabled', false);
                     updateDriversList();
                     updateSwapForecast();
                     updateNextSwitchPreview();
@@ -1331,7 +1368,7 @@ jQuery(document).ready(function($) {
     function updateNextSwitchPreview() {
         let switchDrivers = getNextSwitchDrivers();
 
-        if (isRaceStartAdjustmentMode()) {
+        if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
             $('#nextSwitchPreview').html(renderRaceStartDriverPreview(switchDrivers));
             updateRaceStartCountdown(parseWpDate(raceData.race.start_time));
             updateSwitchTimeControls();
@@ -1353,7 +1390,7 @@ jQuery(document).ready(function($) {
             renderSwitchDriverPreview(isSameSwitchDriver(switchDrivers) ? 'Nochmal' : 'Nächster', switchDrivers.to, true)
         );
         updateNextSwitchTimePreview(switchDrivers);
-        if (isRaceStartAdjustmentMode()) {
+        if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
             updateSwitchTimeControls();
         } else {
             $('#switchDriverBtn').prop('disabled', false);
@@ -1386,7 +1423,7 @@ jQuery(document).ready(function($) {
     }
 
     function updateNextSwitchTimePreview(switchDrivers) {
-        if (isRaceStartAdjustmentMode()) {
+        if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
             updateRaceStartCountdown(parseWpDate(raceData.race.start_time));
             return;
         }
@@ -1473,9 +1510,13 @@ jQuery(document).ready(function($) {
         
         if (!raceData || !raceData.rotations || raceData.rotations.length === 0) {
             html += '<p>Noch keine Wechsel</p>';
-            $('#undoSwitchBtn').prop('disabled', true);
+            if (isRaceStartAdjustmentMode()) {
+                $('#undoSwitchBtn').prop('disabled', false).text('Rennstart korrigieren');
+            } else {
+                $('#undoSwitchBtn').prop('disabled', true).text('Letzten Fahrerwechsel rückgängig');
+            }
         } else {
-            $('#undoSwitchBtn').prop('disabled', false);
+            $('#undoSwitchBtn').prop('disabled', false).text('Letzten Fahrerwechsel rückgängig');
             raceData.rotations.forEach(function(rotation) {
                 html += '<div class="rar-log-entry">' +
                     escapeHtml(rotation.from_driver || '') + ' zu ' + escapeHtml(rotation.to_driver || '') +
@@ -1551,7 +1592,8 @@ jQuery(document).ready(function($) {
             String(date.getMonth() + 1).padStart(2, '0') + '-' +
             String(date.getDate()).padStart(2, '0') + 'T' +
             String(date.getHours()).padStart(2, '0') + ':' +
-            String(date.getMinutes()).padStart(2, '0');
+            String(date.getMinutes()).padStart(2, '0') + ':' +
+            String(date.getSeconds()).padStart(2, '0');
     }
 
     function formatCountdown(date) {
