@@ -48,11 +48,18 @@ class RAR_Race_Logic {
 
             case 'remove':
                 $index = intval( $args['index'] ?? -1 );
-                $materialize_length = intval( $args['materialize_length'] ?? $index + 2 );
+                $materialize_length = intval( $args['materialize_length'] ?? $index + 1 );
                 self::assert_future_index( $index, $completed_laps );
                 self::ensure_queue_length( $queue, max( $materialize_length, $index + 1 ), $drivers );
+                $removed_from_visible_bottom = $index >= $materialize_length - 1;
+                $removed_driver_order = intval( $queue[ $index ] ?? 0 );
                 array_splice( $queue, $index, 1 );
-                self::fill_queue_after_remove( $queue, $materialize_length, $drivers );
+                self::fill_queue_after_remove(
+                    $queue,
+                    $materialize_length,
+                    $drivers,
+                    $removed_from_visible_bottom ? $removed_driver_order : 0
+                );
                 return $queue;
 
             case 'move':
@@ -163,14 +170,37 @@ class RAR_Race_Logic {
         }
     }
 
-    private static function fill_queue_after_remove( &$queue, $length, $drivers ) {
+    private static function fill_queue_after_remove( &$queue, $length, $drivers, $removed_driver_order = 0 ) {
         if ( count( $queue ) >= $length ) {
             $queue = array_slice( $queue, 0, max( 0, $length - 1 ) );
         }
 
+        $next_after_removed = $removed_driver_order ? self::get_next_default_driver_order_after( $removed_driver_order, $drivers ) : null;
         while ( count( $queue ) < $length ) {
+            if ( null !== $next_after_removed ) {
+                $queue[] = $next_after_removed;
+                $next_after_removed = null;
+                continue;
+            }
+
             $queue[] = self::get_next_default_driver_order( $queue, $drivers );
         }
+    }
+
+    private static function get_next_default_driver_order_after( $driver_order, $drivers ) {
+        $drivers = array_values( (array) $drivers );
+        if ( empty( $drivers ) ) {
+            throw new InvalidArgumentException( 'Keine Fahrer verfügbar' );
+        }
+
+        foreach ( $drivers as $index => $driver ) {
+            if ( intval( $driver->driver_order ?? 0 ) === intval( $driver_order ) ) {
+                $next_driver = $drivers[ ( $index + 1 ) % count( $drivers ) ];
+                return intval( $next_driver->driver_order );
+            }
+        }
+
+        return null;
     }
 
     private static function get_next_default_driver_order( $queue, $drivers ) {

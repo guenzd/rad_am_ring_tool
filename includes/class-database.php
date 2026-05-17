@@ -25,6 +25,7 @@ class RAR_Database {
             end_time datetime NULL,
             planned_end_time datetime NULL,
             first_lap_extra_time decimal(10, 2) NOT NULL DEFAULT 0 COMMENT 'in seconds',
+            target_offset_time decimal(10, 2) NOT NULL DEFAULT 0 COMMENT 'in seconds',
             rotation_sequence longtext NULL,
             total_laps int(11) DEFAULT 0,
             notes longtext NULL,
@@ -86,6 +87,16 @@ class RAR_Database {
             "ALTER TABLE {$wpdb->prefix}rar_race_sessions ADD COLUMN first_lap_extra_time decimal(10, 2) NOT NULL DEFAULT 0 COMMENT 'in seconds' AFTER end_time"
         );
 
+        $added_target_offset_column = self::maybe_add_column(
+            "{$wpdb->prefix}rar_race_sessions",
+            'target_offset_time',
+            "ALTER TABLE {$wpdb->prefix}rar_race_sessions ADD COLUMN target_offset_time decimal(10, 2) NOT NULL DEFAULT 0 COMMENT 'in seconds' AFTER first_lap_extra_time"
+        );
+
+        if ( $added_target_offset_column ) {
+            $wpdb->query( "UPDATE {$wpdb->prefix}rar_race_sessions SET target_offset_time = first_lap_extra_time" );
+        }
+
         self::maybe_add_column(
             "{$wpdb->prefix}rar_race_sessions",
             'planned_end_time',
@@ -95,7 +106,7 @@ class RAR_Database {
         self::maybe_add_column(
             "{$wpdb->prefix}rar_race_sessions",
             'rotation_sequence',
-            "ALTER TABLE {$wpdb->prefix}rar_race_sessions ADD COLUMN rotation_sequence longtext NULL AFTER first_lap_extra_time"
+            "ALTER TABLE {$wpdb->prefix}rar_race_sessions ADD COLUMN rotation_sequence longtext NULL AFTER target_offset_time"
         );
 
         self::maybe_add_column(
@@ -120,7 +131,10 @@ class RAR_Database {
 
         if ( ! $column_exists ) {
             $wpdb->query( $alter_sql );
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -156,7 +170,7 @@ class RAR_Database {
     /**
      * Create a new race session
      */
-    public static function create_race( $race_name, $first_lap_extra_time = 0, $start_time = null, $planned_end_time = null ) {
+    public static function create_race( $race_name, $first_lap_extra_time = 0, $target_offset_time = 0, $start_time = null, $planned_end_time = null ) {
         global $wpdb;
 
         $start_time = $start_time ?: current_time( 'mysql' );
@@ -168,8 +182,9 @@ class RAR_Database {
                 'start_time' => $start_time,
                 'planned_end_time' => $planned_end_time,
                 'first_lap_extra_time' => $first_lap_extra_time,
+                'target_offset_time' => $target_offset_time,
             ],
-            [ '%s', '%s', '%s', '%f' ]
+            [ '%s', '%s', '%s', '%f', '%f' ]
         );
 
         return $wpdb->insert_id;

@@ -34,8 +34,12 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <input type="datetime-local" id="plannedEndTime" class="rar-input" required>
                     </label>
                     <label class="rar-field">
-                        <span>Delta erste/letzte Runde (Minuten)</span>
-                        <input type="number" id="firstLapExtraTime" placeholder="z.B. 5" class="rar-input" min="0" step="0.01" value="5" required>
+                        <span>Offset erste Runde (Minuten)</span>
+                        <input type="number" id="firstLapExtraTime" placeholder="z.B. 3" class="rar-input" min="0" step="0.01" value="3" required>
+                    </label>
+                    <label class="rar-field">
+                        <span>Zielprognose-Offset (Minuten)</span>
+                        <input type="number" id="targetOffsetTime" placeholder="z.B. 6" class="rar-input" min="0" step="0.01" value="6" required>
                     </label>
                     <label class="rar-field">
                         <span>Fahrer</span>
@@ -52,21 +56,6 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </select>
                 <button id="loadRaceBtn" class="rar-btn rar-btn-secondary">Rennen laden</button>
                 <button id="deleteRaceBtn" class="rar-btn rar-btn-danger" disabled>Rennen löschen</button>
-            </div>
-
-            <div id="raceStartPanel" class="rar-card" style="display: none;">
-                <h3>Rennstart</h3>
-                <div id="raceStartCountdown" class="rar-start-countdown"></div>
-                <div class="rar-form-group">
-                    <div class="rar-switch-time-row">
-                        <label class="rar-field rar-switch-time">
-                            <span>Startzeit setzen/korrigieren</span>
-                            <input type="datetime-local" id="manualStartTime" class="rar-input">
-                        </label>
-                        <button type="button" id="startRaceTimeOkBtn" class="rar-btn rar-btn-secondary">OK</button>
-                    </div>
-                    <button id="startRaceBtn" class="rar-btn rar-btn-primary">Rennen jetzt starten</button>
-                </div>
             </div>
 
             <div id="addDriverPanel" class="rar-card" style="display: none;">
@@ -87,11 +76,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <h2 id="activeRaceName"></h2>
                 <div class="rar-race-title-actions">
                     <div id="readOnlyBadge" class="rar-readonly-badge" style="display: none;">Nur Lesen</div>
-                    <div id="lapPrognosis" class="rar-lap-prognosis">-- Runden</div>
                 </div>
             </div>
-            <div id="raceConfig" class="rar-race-config"></div>
-
             <!-- Driver Switch -->
             <div class="rar-card rar-card-switch">
                 <h3>Fahrerwechsel</h3>
@@ -103,7 +89,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <div class="rar-switch-action-panel">
                         <div class="rar-switch-time-row">
                             <label class="rar-field rar-switch-time">
-                                <span>Wechselzeit optional korrigieren</span>
+                                <span id="manualSwitchTimeLabel">Wechselzeit nachträglich korrigieren</span>
                                 <input type="datetime-local" id="manualSwitchTime" class="rar-input">
                             </label>
                             <button type="button" id="switchDriverTimeOkBtn" class="rar-btn rar-btn-secondary">OK</button>

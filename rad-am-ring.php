@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'RAR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'RAR_PLUGIN_VERSION', '0.1.0' );
-define( 'RAR_DB_VERSION', '0.5.0' );
+define( 'RAR_DB_VERSION', '0.6.0' );
 
 // Include required files
 require_once RAR_PLUGIN_DIR . 'includes/class-database.php';
@@ -202,6 +202,7 @@ function rar_ajax_create_race() {
     $start_time = sanitize_text_field( wp_unslash( $_POST['start_time'] ?? '' ) );
     $planned_end_time = sanitize_text_field( wp_unslash( $_POST['planned_end_time'] ?? '' ) );
     $first_lap_extra_time = isset( $_POST['first_lap_extra_time'] ) ? floatval( $_POST['first_lap_extra_time'] ) : 0;
+    $target_offset_time = isset( $_POST['target_offset_time'] ) ? floatval( $_POST['target_offset_time'] ) : 0;
     $default_driver_names = rar_parse_driver_names( wp_unslash( $_POST['default_driver_names'] ?? '' ) );
 
     if ( ! $race_name ) {
@@ -223,9 +224,14 @@ function rar_ajax_create_race() {
         wp_send_json_error( 'Zusatzzeit der ersten Runde darf nicht negativ sein' );
     }
 
+    if ( $target_offset_time < 0 ) {
+        wp_send_json_error( 'Zielprognose-Offset darf nicht negativ sein' );
+    }
+
     $race_id = RAR_Database::create_race(
         $race_name,
         $first_lap_extra_time,
+        $target_offset_time,
         $start_datetime->format( 'Y-m-d H:i:s' ),
         $planned_end_datetime->format( 'Y-m-d H:i:s' )
     );

@@ -31,6 +31,7 @@ function raceData(overrides = {}) {
             start_time: '2026-05-01 10:00:00',
             planned_end_time: '2026-05-01 16:00:00',
             first_lap_extra_time: 7 * 60,
+            target_offset_time: 7 * 60,
             ...(overrides.race || {})
         },
         drivers: overrides.drivers || drivers(),
@@ -304,7 +305,7 @@ test('lap prognosis includes first lap extra time', () => {
     assert.equal(prognosis.bufferMinutes, 1);
 });
 
-test('final lap can finish when cutoff is reached only after applying the delta reduction', () => {
+test('final lap can finish when switch cutoff is reached after adding the finish-line delta', () => {
     const data = raceData({
         race: {
             start_time: '2026-05-01 10:00:00',
@@ -321,7 +322,7 @@ test('final lap can finish when cutoff is reached only after applying the delta 
     assert.equal(prognosis.bufferMinutes, 0);
 });
 
-test('final lap is rejected when it still misses cutoff after delta reduction', () => {
+test('final lap buffer uses target time plus finish-line delta', () => {
     const data = raceData({
         race: {
             start_time: '2026-05-01 10:00:00',
@@ -335,7 +336,25 @@ test('final lap is rejected when it still misses cutoff after delta reduction', 
     const prognosis = logic.calculateLapPrognosis(data, '1,2', parseDate);
 
     assert.equal(prognosis.laps, 1);
-    assert.equal(prognosis.bufferMinutes, 37);
+    assert.equal(prognosis.bufferMinutes, 44);
+});
+
+test('first lap extra and target offset are independent', () => {
+    const data = raceData({
+        race: {
+            start_time: '2026-05-01 10:00:00',
+            planned_end_time: '2026-05-01 11:33:00',
+            first_lap_extra_time: 3 * 60,
+            target_offset_time: 6 * 60
+        },
+        drivers: drivers(2),
+        rotations: []
+    });
+
+    const prognosis = logic.calculateLapPrognosis(data, '1,2', parseDate);
+
+    assert.equal(prognosis.laps, 2);
+    assert.equal(prognosis.bufferMinutes, 6);
 });
 
 test('lap prognosis starts from completed laps and latest real switch time', () => {
@@ -343,7 +362,8 @@ test('lap prognosis starts from completed laps and latest real switch time', () 
         race: {
             start_time: '2026-05-01 10:00:00',
             planned_end_time: '2026-05-01 12:25:00',
-            first_lap_extra_time: 0
+            first_lap_extra_time: 0,
+            target_offset_time: 0
         },
         drivers: drivers(1),
         rotations: [

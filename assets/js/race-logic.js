@@ -220,21 +220,23 @@
 
         let startTime = parseDate(raceData.race.start_time);
         let plannedEndTime = parseDate(raceData.race.planned_end_time);
+        let firstLapExtra = parseFloat(raceData.race.first_lap_extra_time || 0);
+        let targetOffset = parseFloat(raceData.race.target_offset_time || 0);
+        let effectiveEndTime = addSeconds(plannedEndTime, targetOffset);
 
-        if (!startTime || !plannedEndTime || plannedEndTime.getTime() <= startTime.getTime()) {
+        if (!startTime || !plannedEndTime || effectiveEndTime.getTime() <= startTime.getTime()) {
             return null;
         }
 
         let sequence = parseRotationSequence(rotationSequenceValue);
         let lapStats = getInferredLapStats(raceData, parseDate);
-        let firstLapExtra = parseFloat(raceData.race.first_lap_extra_time || 0);
         let baseTime = lapStats.latestSwitchTime || startTime;
         let projectedTime = new Date(baseTime.getTime());
         let laps = lapStats.completedLaps;
         let lastCrossingTime = new Date(baseTime.getTime());
 
         for (let lapIndex = lapStats.completedLaps; lapIndex < 2000; lapIndex++) {
-            let lap = getProjectedLap(raceData.drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, plannedEndTime);
+            let lap = getProjectedLap(raceData.drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, effectiveEndTime);
 
             if (!lap) {
                 break;
@@ -253,10 +255,10 @@
             }
         }
 
-        return buildLapPrognosisResult(laps, plannedEndTime, lastCrossingTime);
+        return buildLapPrognosisResult(laps, effectiveEndTime, lastCrossingTime);
     }
 
-    function getProjectedLap(drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, plannedEndTime) {
+    function getProjectedLap(drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, effectiveEndTime) {
         let driver = getDriverForLap(lapIndex, drivers, sequence);
 
         if (!driver) {
@@ -266,20 +268,10 @@
         let lapSeconds = getForecastLapSeconds(driver, lapStats) + (lapIndex === 0 ? firstLapExtra : 0);
         let crossingTime = addSeconds(projectedTime, lapSeconds);
 
-        if (crossingTime.getTime() < plannedEndTime.getTime()) {
-            return {
-                canCount: true,
-                crossingTime: crossingTime,
-                isFinal: false
-            };
-        }
-
-        let finalCrossingTime = addSeconds(projectedTime, Math.max(1, lapSeconds - firstLapExtra));
-
         return {
-            canCount: finalCrossingTime.getTime() <= plannedEndTime.getTime(),
-            crossingTime: finalCrossingTime,
-            isFinal: true
+            canCount: crossingTime.getTime() <= effectiveEndTime.getTime(),
+            crossingTime: crossingTime,
+            isFinal: crossingTime.getTime() >= effectiveEndTime.getTime()
         };
     }
 

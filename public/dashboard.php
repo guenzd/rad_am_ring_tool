@@ -19,21 +19,6 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
 
             <div class="rar-race-title-row">
                 <h2 id="activeRaceName"><?php echo $public_race ? esc_html( $public_race->race_name ) : ''; ?></h2>
-                <div class="rar-race-title-actions">
-                    <div id="lapPrognosis" class="rar-lap-prognosis">-- Runden</div>
-                </div>
-            </div>
-
-            <div id="raceConfig" class="rar-race-config">
-                <?php if ( $public_race ) : ?>
-                    <?php
-                    $first_lap_extra_minutes = floatval( $public_race->first_lap_extra_time ?? 0 ) / 60;
-                    ?>
-                    Start: <?php echo esc_html( mysql2date( 'd.m. H:i', $public_race->start_time ) ); ?>
-                    | Ziel: <?php echo esc_html( mysql2date( 'd.m. H:i', $public_race->planned_end_time ) ); ?>
-                    | Erste Runde: +<?php echo esc_html( number_format_i18n( $first_lap_extra_minutes, 2 ) ); ?> Minuten
-                    | Letzte Runde: -<?php echo esc_html( number_format_i18n( $first_lap_extra_minutes, 2 ) ); ?> Minuten
-                <?php endif; ?>
             </div>
 
             <div class="rar-card rar-card-switch">
@@ -73,6 +58,18 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
             <details class="rar-card rar-collapsible-card rar-card-log">
                 <summary>Wechsel-Verlauf</summary>
                 <div id="switchLog" class="rar-log">
+                    <?php if ( $public_race ) : ?>
+                        <?php
+                        $first_lap_extra_minutes = floatval( $public_race->first_lap_extra_time ?? 0 ) / 60;
+                        $target_offset_minutes = floatval( $public_race->target_offset_time ?? 0 ) / 60;
+                        ?>
+                        <div class="rar-log-entry rar-log-entry-config">
+                            Start: <?php echo esc_html( mysql2date( 'd.m. H:i', $public_race->start_time ) ); ?>
+                            | Ziel: <?php echo esc_html( mysql2date( 'd.m. H:i', $public_race->planned_end_time ) ); ?>
+                            | Erste Runde: +<?php echo esc_html( number_format_i18n( $first_lap_extra_minutes, 2 ) ); ?> Minuten
+                            | Ziel-Offset: +<?php echo esc_html( number_format_i18n( $target_offset_minutes, 2 ) ); ?> Minuten
+                        </div>
+                    <?php endif; ?>
                     <?php if ( $public_data && ! empty( $public_data['rotations'] ) ) : ?>
                         <?php foreach ( $public_data['rotations'] as $rotation ) : ?>
                             <div class="rar-log-entry">

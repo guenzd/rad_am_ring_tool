@@ -64,6 +64,18 @@ rar_assert_same(
 );
 
 rar_assert_same(
+    [ 1, 4 ],
+    RAR_Race_Logic::mutate_queue(
+        [ 1, 3 ],
+        'remove',
+        [ 'index' => 1 ],
+        rar_test_drivers(),
+        0
+    ),
+    'remove without explicit materialize length continues after the removed visible stint'
+);
+
+rar_assert_same(
     [ 1, 3, 2, 4 ],
     RAR_Race_Logic::mutate_queue(
         [ 1, 2, 3, 4 ],
@@ -121,6 +133,47 @@ rar_assert_same(
         0
     ),
     'remove appends the next default driver after the visible bottom'
+);
+
+$first_quick_remove = RAR_Race_Logic::mutate_queue(
+    [ 1, 2, 3, 4, 1, 2, 3, 4 ],
+    'remove',
+    [
+        'index'              => 2,
+        'materialize_length' => 8,
+    ],
+    rar_test_drivers(),
+    0
+);
+
+rar_assert_same(
+    [ 1, 2, 1, 2, 3, 4, 1, 2 ],
+    RAR_Race_Logic::mutate_queue(
+        $first_quick_remove,
+        'remove',
+        [
+            'index'              => 2,
+            'materialize_length' => 8,
+        ],
+        rar_test_drivers(),
+        0
+    ),
+    'repeated remove keeps visible queue filled from below'
+);
+
+rar_assert_same(
+    [ 1, 2, 3, 1 ],
+    RAR_Race_Logic::mutate_queue(
+        [ 1, 2, 3, 4 ],
+        'remove',
+        [
+            'index'              => 3,
+            'materialize_length' => 4,
+        ],
+        rar_test_drivers(),
+        0
+    ),
+    'removing the last visible driver continues with the next driver in order'
 );
 
 rar_assert_throws(
