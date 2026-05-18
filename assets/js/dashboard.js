@@ -456,6 +456,17 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        if (hasNoRecordedSwitches() && !isFirstSwitchDue(getManualSwitchTimeDate() || getCurrentDate())) {
+            if (isRaceStartAdjustmentMode() && isRaceStartTimeCorrection()) {
+                saveRaceStartTime();
+                return;
+            }
+
+            showMessage('Der erste Fahrer ist noch auf der Strecke', 'error');
+            updateNextSwitchPreview();
+            return;
+        }
+
         $.ajax({
             url: rarData.ajaxUrl,
             type: 'POST',
@@ -639,9 +650,7 @@ jQuery(document).ready(function($) {
         }
 
         let startTime = parseWpDate(raceData.race.start_time);
-        let manualStartTime = $('#manualSwitchTime').val();
-        let startTimeValue = startTime ? formatDateTimeLocal(startTime) : '';
-        let isCorrection = manualStartTime && manualStartTime !== startTimeValue;
+        let isCorrection = isRaceStartTimeCorrection();
         let startAdjustmentMode = isRaceStartAdjustmentMode();
 
         if (startAdjustmentMode) {
@@ -652,6 +661,10 @@ jQuery(document).ready(function($) {
             if (isBeforeRaceStart()) {
                 $switchButton.prop('disabled', false).text(isCorrection ? 'Startzeit korrigieren' : 'Rennen jetzt starten');
                 updateRaceStartCountdown(startTime);
+            } else if (isCorrection) {
+                $switchButton.prop('disabled', false).text('Startzeit korrigieren');
+            } else {
+                $switchButton.prop('disabled', true).text('Erste Runde läuft');
             }
 
             applyReadOnlyState();
@@ -665,13 +678,47 @@ jQuery(document).ready(function($) {
     }
 
     function isRaceStartAdjustmentMode() {
-        return !!(raceData && raceData.race && (!raceData.rotations || raceData.rotations.length === 0));
+        return !!(raceData && raceData.race && hasNoRecordedSwitches() && !isFirstSwitchDue(getCurrentDate()));
+    }
+
+    function hasNoRecordedSwitches() {
+        return !raceData || !raceData.rotations || raceData.rotations.length === 0;
+    }
+
+    function isRaceStartTimeCorrection() {
+        let startTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
+        let manualStartTime = $('#manualSwitchTime').val();
+        let startTimeValue = startTime ? formatDateTimeLocal(startTime) : '';
+
+        return !!(manualStartTime && manualStartTime !== startTimeValue);
     }
 
     function isBeforeRaceStart() {
         let startTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
 
         return !!(startTime && Date.now() < startTime.getTime());
+    }
+
+    function getManualSwitchTimeDate() {
+        return parseWpDate(getManualSwitchTimeMysqlValue());
+    }
+
+    function getCurrentDate() {
+        return new Date(Date.now());
+    }
+
+    function isFirstSwitchDue(referenceDate) {
+        if (!hasNoRecordedSwitches()) {
+            return true;
+        }
+
+        let startTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
+
+        if (!referenceDate || !startTime) {
+            return false;
+        }
+
+        return referenceDate.getTime() >= startTime.getTime() + 15 * 60 * 1000;
     }
 
     function updateRaceStartCountdown(startTime) {
@@ -1367,9 +1414,9 @@ jQuery(document).ready(function($) {
     function updateNextSwitchPreview() {
         let switchDrivers = getNextSwitchDrivers();
 
-        if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
+        if (isRaceStartAdjustmentMode()) {
             $('#nextSwitchPreview').html(renderRaceStartDriverPreview(switchDrivers));
-            updateRaceStartCountdown(parseWpDate(raceData.race.start_time));
+            updateNextSwitchTimePreview(switchDrivers);
             updateSwitchTimeControls();
             applyReadOnlyState();
             return;
@@ -1389,7 +1436,7 @@ jQuery(document).ready(function($) {
             renderSwitchDriverPreview(isSameSwitchDriver(switchDrivers) ? 'Nochmal' : 'Nächster', switchDrivers.to, true)
         );
         updateNextSwitchTimePreview(switchDrivers);
-        if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
+        if (isRaceStartAdjustmentMode()) {
             updateSwitchTimeControls();
         } else {
             $('#switchDriverBtn').prop('disabled', false);
@@ -1422,11 +1469,6 @@ jQuery(document).ready(function($) {
     }
 
     function updateNextSwitchTimePreview(switchDrivers) {
-        if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
-            updateRaceStartCountdown(parseWpDate(raceData.race.start_time));
-            return;
-        }
-
         let prognosis = getNextSwitchPrognosis(switchDrivers);
 
         if (!prognosis) {

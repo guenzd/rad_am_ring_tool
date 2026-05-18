@@ -332,6 +332,10 @@ function rar_ajax_switch_driver() {
         $switched_at = $switched_at_datetime->format( 'Y-m-d H:i:s' );
     }
 
+    if ( empty( $data['rotations'] ) && ! rar_is_first_switch_due( $data, $switch_drivers['from'], $switched_at ) ) {
+        wp_send_json_error( 'Der erste Fahrer ist noch auf der Strecke' );
+    }
+
     RAR_Database::record_driver_switch(
         $race_id,
         intval( $switch_drivers['from']->id ),
@@ -354,6 +358,23 @@ function rar_ajax_switch_driver() {
             ],
         ]
     );
+}
+
+function rar_is_first_switch_due( $race_data, $driver, $switched_at ) {
+    $race = $race_data['race'] ?? null;
+    if ( ! $race || ! $driver ) {
+        return false;
+    }
+
+    $start_time = rar_parse_local_datetime( $race->start_time ?? '' );
+    $switch_time = rar_parse_local_datetime( $switched_at );
+    if ( ! $start_time || ! $switch_time ) {
+        return false;
+    }
+
+    $first_switch_time = $start_time->modify( '+15 minutes' );
+
+    return $switch_time >= $first_switch_time;
 }
 
 function rar_ajax_get_race_data() {

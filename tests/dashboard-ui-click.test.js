@@ -673,10 +673,11 @@ test('manual race start click keeps first driver visible and start correction av
 
         assert.equal(startRaceRequests, 1);
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
-        assert.match(harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
+        assert.match(harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+        assert.doesNotMatch(harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
         assert.match(harness.elements.get('#swapForecast').html(), /rar-forecast-order">#1/);
         assert.match(harness.elements.get('#swapForecast').html(), /rar-forecast-name">Daniel/);
-        assert.equal(harness.elements.get('#switchDriverBtn').text(), 'Fahrerwechsel');
+        assert.equal(harness.elements.get('#switchDriverBtn').text(), 'Erste Runde läuft');
         assert.equal(harness.elements.get('#undoSwitchBtn').text(), 'Rennstart korrigieren');
     } finally {
         Date.now = originalNow;
@@ -688,6 +689,87 @@ test('manual race start click keeps first driver visible and start correction av
         global.$ = originalDollar;
         global.rarData = originalRarData;
         global.RARRaceLogic = originalLogic;
+    }
+});
+
+test('manual race start and queue edit do not create a driver switch', () => {
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 41,
+            startTime: '2026-05-18 21:10:00',
+            plannedEndTime: '2026-05-19 21:05:00',
+            firstLapExtraTime: 180,
+            targetOffsetTime: 360,
+            lapTime: 2700,
+        }),
+        '2026-05-18T21:06:00'
+    );
+
+    try {
+        context.loadDashboard();
+
+        context.clickSwitchAt('2026-05-18T21:06:00');
+        assert.equal(context.raceData.race.start_time, '2026-05-18 21:06:00');
+        assert.deepEqual(context.raceData.rotations, []);
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
+
+        context.clickForecastRemove(1);
+        assert.match(context.raceData.race.rotation_sequence, /^1,3,4,1/);
+        assert.deepEqual(context.raceData.rotations, []);
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
+        assert.doesNotMatch(context.harness.elements.get('#switchLog').html(), /Daniel zu Moritz/);
+        assert.doesNotMatch(context.harness.elements.get('#switchLog').html(), /Moritz zu Heiko/);
+    } finally {
+        context.restore();
+    }
+});
+
+test('start now button starts race without creating a driver switch', () => {
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 42,
+            startTime: '2026-05-18 21:10:00',
+            firstLapExtraTime: 180,
+            lapTime: 2700,
+        }),
+        '2026-05-18T21:06:00'
+    );
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#switchDriverBtn').text(), 'Rennen jetzt starten');
+        context.harness.elements.get('#switchDriverBtn').trigger('click');
+
+        assert.equal(context.raceData.race.start_time, '2026-05-18 21:06:00');
+        assert.deepEqual(context.raceData.rotations, []);
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
+    } finally {
+        context.restore();
+    }
+});
+
+test('first driver switch is allowed from 15 minutes after race start', () => {
+    const context = createDashboardClickTest(createShortRaceData({ id: 43 }), '2026-05-16T10:00:00');
+
+    try {
+        context.loadDashboard();
+
+        context.setNow('2026-05-16T10:14:59');
+        context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:00:00');
+        context.harness.elements.get('#switchDriverBtn').trigger('click');
+        assert.deepEqual(context.raceData.rotations, []);
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+
+        context.clickSwitchAt('2026-05-16T10:15:00');
+        assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}@${rotation.switched_at}`), [
+            'Daniel->Moritz@2026-05-16 10:15:00',
+        ]);
+    } finally {
+        context.restore();
     }
 });
 
@@ -715,7 +797,7 @@ test('accelerated click test can simulate a complete short race', () => {
             id: 23,
             race_name: 'Kurzrennen',
             start_time: '2026-05-16 10:00:00',
-            planned_end_time: '2026-05-16 10:20:00',
+            planned_end_time: '2026-05-16 10:30:00',
             first_lap_extra_time: 0,
             target_offset_time: 0,
             rotation_sequence: '1,2,3,4',
@@ -805,9 +887,10 @@ test('accelerated click test can simulate a complete short race', () => {
         require('../assets/js/dashboard.js');
 
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
-        assert.match(harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
+        assert.match(harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+        assert.doesNotMatch(harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
 
-        clickSwitchAt('2026-05-16T10:05:00');
+        clickSwitchAt('2026-05-16T10:15:00');
         assert.equal(raceData.rotations.length, 1);
         assert.deepEqual(raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Moritz',
@@ -815,7 +898,7 @@ test('accelerated click test can simulate a complete short race', () => {
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
 
-        clickSwitchAt('2026-05-16T10:10:00');
+        clickSwitchAt('2026-05-16T10:20:00');
         assert.equal(raceData.rotations.length, 2);
         assert.deepEqual(raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Moritz',
@@ -824,7 +907,7 @@ test('accelerated click test can simulate a complete short race', () => {
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#4 Stefan/);
 
-        clickSwitchAt('2026-05-16T10:15:00');
+        clickSwitchAt('2026-05-16T10:25:00');
         assert.equal(raceData.rotations.length, 3);
         assert.deepEqual(raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Moritz',
@@ -835,7 +918,7 @@ test('accelerated click test can simulate a complete short race', () => {
         assert.match(harness.elements.get('#nextSwitchTimePreview').html(), /Ziel-Prognose/);
         assert.match(harness.elements.get('#swapForecast').html(), /Letzter Fahrer/);
 
-        setNow('2026-05-16T10:21:00');
+        setNow('2026-05-16T10:31:00');
         harness.elements.get('#switchDriverTimeOkBtn').trigger('click');
         assert.equal(raceData.rotations.length, 4);
         assert.deepEqual(raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
@@ -864,11 +947,11 @@ test('accelerated click test records manually corrected switch times', () => {
     try {
         context.loadDashboard();
 
-        context.clickSwitchAt('2026-05-16T10:05:00');
-        assert.equal(context.raceData.rotations[0].switched_at, '2026-05-16 10:05:00');
+        context.clickSwitchAt('2026-05-16T10:15:00');
+        assert.equal(context.raceData.rotations[0].switched_at, '2026-05-16 10:15:00');
 
-        context.setNow('2026-05-16T10:12:00');
-        context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:09:37');
+        context.setNow('2026-05-16T10:20:00');
+        context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:19:37');
         context.harness.elements.get('#switchDriverTimeOkBtn').trigger('click');
 
         assert.equal(context.raceData.rotations.length, 2);
@@ -876,7 +959,7 @@ test('accelerated click test records manually corrected switch times', () => {
             'Daniel->Moritz',
             'Moritz->Heiko',
         ]);
-        assert.equal(context.raceData.rotations[1].switched_at, '2026-05-16 10:09:37');
+        assert.equal(context.raceData.rotations[1].switched_at, '2026-05-16 10:19:37');
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#4 Stefan/);
     } finally {
@@ -885,17 +968,24 @@ test('accelerated click test records manually corrected switch times', () => {
 });
 
 test('advanced queue quick edit changes upcoming drivers and still reaches race end', () => {
-    const context = createDashboardClickTest(createShortRaceData({ id: 26 }), '2026-05-16T10:00:00');
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 26,
+            plannedEndTime: '2026-05-16 10:30:00',
+        }),
+        '2026-05-16T10:00:00'
+    );
 
     try {
         context.loadDashboard();
 
         context.clickForecastRemove(1);
-        assert.equal(context.raceData.race.rotation_sequence, '1,3,4,1');
+        assert.match(context.raceData.race.rotation_sequence, /^1,3,4,1/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
-        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+        assert.doesNotMatch(context.harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
 
-        context.clickSwitchAt('2026-05-16T10:05:00');
+        context.clickSwitchAt('2026-05-16T10:15:00');
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Heiko',
         ]);
@@ -903,19 +993,19 @@ test('advanced queue quick edit changes upcoming drivers and still reaches race 
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#4 Stefan/);
 
         context.clickForecastRemove(2);
-        assert.equal(context.raceData.race.rotation_sequence, '1,3,1,2');
+        assert.match(context.raceData.race.rotation_sequence, /^1,3,1/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
 
-        context.clickSwitchAt('2026-05-16T10:10:00');
-        context.clickSwitchAt('2026-05-16T10:15:00');
-        context.clickOkAt('2026-05-16T10:21:00');
+        context.clickSwitchAt('2026-05-16T10:20:00');
+        context.clickSwitchAt('2026-05-16T10:25:00');
+        context.clickOkAt('2026-05-16T10:31:00');
 
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Heiko',
             'Heiko->Daniel',
-            'Daniel->Moritz',
-            'Moritz->Daniel',
+            'Daniel->Stefan',
+            'Stefan->Daniel',
         ]);
         assert.match(context.harness.elements.get('#swapForecast').html(), /Geplante Rennzeit erreicht/);
     } finally {
@@ -941,9 +1031,9 @@ test('advanced queue quick edit supports repeated bottom removals without stalli
         assert.equal(context.raceData.race.rotation_sequence, '1,2,3,3');
         assert.match(context.harness.elements.get('#swapForecast').html(), /rar-forecast-order">#3/);
 
-        context.clickSwitchAt('2026-05-16T10:05:00');
-        context.clickSwitchAt('2026-05-16T10:10:00');
         context.clickSwitchAt('2026-05-16T10:15:00');
+        context.clickSwitchAt('2026-05-16T10:20:00');
+        context.clickSwitchAt('2026-05-16T10:25:00');
 
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Moritz',
@@ -951,6 +1041,68 @@ test('advanced queue quick edit supports repeated bottom removals without stalli
             'Heiko->Heiko',
         ]);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
+    } finally {
+        context.restore();
+    }
+});
+
+test('advanced race with four queue edits keeps 24 lap stats equal to switch counts', () => {
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 44,
+            plannedEndTime: '2026-05-16 11:00:00',
+            lapTime: 60,
+        }),
+        '2026-05-16T10:00:00'
+    );
+
+    function switchTimeForLap(lapNumber) {
+        let date = parseLocalDate('2026-05-16T10:15:00');
+        date.setMinutes(date.getMinutes() + lapNumber - 1);
+
+        return date.getFullYear() + '-' +
+            String(date.getMonth() + 1).padStart(2, '0') + '-' +
+            String(date.getDate()).padStart(2, '0') + 'T' +
+            String(date.getHours()).padStart(2, '0') + ':' +
+            String(date.getMinutes()).padStart(2, '0') + ':' +
+            String(date.getSeconds()).padStart(2, '0');
+    }
+
+    function countSwitchesByFromDriver(rotations) {
+        return rotations.reduce((counts, rotation) => {
+            let driverId = String(rotation.from_driver_id);
+            counts[driverId] = (counts[driverId] || 0) + 1;
+
+            return counts;
+        }, {});
+    }
+
+    try {
+        context.loadDashboard();
+        context.clickForecastRemove(1);
+
+        for (let lapNumber = 1; lapNumber <= 24; lapNumber++) {
+            if (lapNumber === 7 || lapNumber === 13 || lapNumber === 19) {
+                context.clickForecastRemove(context.raceData.rotations.length + 1);
+            }
+
+            context.clickSwitchAt(switchTimeForLap(lapNumber));
+        }
+
+        assert.equal(context.raceData.rotations.length, 24);
+
+        const lapStats = logic.getInferredLapStats(context.raceData, parseLocalDate);
+        const switchCounts = countSwitchesByFromDriver(context.raceData.rotations);
+
+        assert.equal(lapStats.completedLaps, 24);
+        context.raceData.drivers.forEach((driver) => {
+            let driverId = String(driver.id);
+            assert.equal(
+                lapStats.byDriver[driverId] ? lapStats.byDriver[driverId].count : 0,
+                switchCounts[driverId] || 0,
+                driver.driver_name
+            );
+        });
     } finally {
         context.restore();
     }
@@ -977,9 +1129,9 @@ test('advanced start correction keeps second precision before first real switch'
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
 
-        context.clickSwitchAt('2026-05-16T10:05:37');
+        context.clickSwitchAt('2026-05-16T10:15:37');
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}@${rotation.switched_at}`), [
-            'Daniel->Moritz@2026-05-16 10:05:37',
+            'Daniel->Moritz@2026-05-16 10:15:37',
         ]);
     } finally {
         context.restore();
@@ -992,8 +1144,8 @@ test('advanced undo restores the previous current driver and can continue racing
     try {
         context.loadDashboard();
 
-        context.clickSwitchAt('2026-05-16T10:05:00');
-        context.clickSwitchAt('2026-05-16T10:10:00');
+        context.clickSwitchAt('2026-05-16T10:15:00');
+        context.clickSwitchAt('2026-05-16T10:20:00');
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Moritz',
             'Moritz->Heiko',
@@ -1006,10 +1158,10 @@ test('advanced undo restores the previous current driver and can continue racing
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
 
-        context.clickSwitchAt('2026-05-16T10:10:42');
+        context.clickSwitchAt('2026-05-16T10:20:42');
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}@${rotation.switched_at}`), [
-            'Daniel->Moritz@2026-05-16 10:05:00',
-            'Moritz->Heiko@2026-05-16 10:10:42',
+            'Daniel->Moritz@2026-05-16 10:15:00',
+            'Moritz->Heiko@2026-05-16 10:20:42',
         ]);
     } finally {
         context.restore();
