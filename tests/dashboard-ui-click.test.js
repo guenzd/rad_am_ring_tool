@@ -773,6 +773,23 @@ test('first driver switch is allowed from 15 minutes after race start', () => {
     }
 });
 
+test('first driver switch after 40 minutes ignores stale race start correction field', () => {
+    const context = createDashboardClickTest(createShortRaceData({ id: 45 }), '2026-05-16T10:40:00');
+
+    try {
+        context.loadDashboard();
+
+        context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:00:00');
+        context.harness.elements.get('#switchDriverBtn').trigger('click');
+
+        assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}@${rotation.switched_at}`), [
+            'Daniel->Moritz@2026-05-16 10:40:00',
+        ]);
+    } finally {
+        context.restore();
+    }
+});
+
 test('accelerated click test can simulate a complete short race', () => {
     let now = new Date('2026-05-16T10:00:00').getTime();
     const originalNow = Date.now;

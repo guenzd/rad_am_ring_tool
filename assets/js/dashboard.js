@@ -456,7 +456,7 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        if (hasNoRecordedSwitches() && !isFirstSwitchDue(getManualSwitchTimeDate() || getCurrentDate())) {
+        if (hasNoRecordedSwitches() && !isFirstSwitchDue(getFirstSwitchReferenceDate())) {
             if (isRaceStartAdjustmentMode() && isRaceStartTimeCorrection()) {
                 saveRaceStartTime();
                 return;
@@ -473,7 +473,7 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'rar_switch_driver',
                 race_id: currentRaceId,
-                switched_at: getManualSwitchTimeMysqlValue(),
+                switched_at: getSwitchDriverRequestTimeValue(),
                 nonce: rarData.nonce,
             },
             success: function(response) {
@@ -701,6 +701,22 @@ jQuery(document).ready(function($) {
 
     function getManualSwitchTimeDate() {
         return parseWpDate(getManualSwitchTimeMysqlValue());
+    }
+
+    function getSwitchDriverRequestTimeValue() {
+        if (hasNoRecordedSwitches() && !isRaceStartTimeCorrection()) {
+            return '';
+        }
+
+        return getManualSwitchTimeMysqlValue();
+    }
+
+    function getFirstSwitchReferenceDate() {
+        if (isRaceStartTimeCorrection()) {
+            return getManualSwitchTimeDate();
+        }
+
+        return getCurrentDate();
     }
 
     function getCurrentDate() {
