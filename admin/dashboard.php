@@ -33,13 +33,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <span>Cutoff / Zielzeit</span>
                         <input type="datetime-local" id="plannedEndTime" class="rar-input" step="1" required>
                     </label>
-                    <label class="rar-field">
+                    <label class="rar-field rar-field-compact">
                         <span>Offset erste Runde (Minuten)</span>
-                        <input type="number" id="firstLapExtraTime" placeholder="z.B. 3" class="rar-input" min="0" step="0.01" value="3" required>
+                        <input type="text" inputmode="decimal" id="firstLapExtraTime" placeholder="z.B. 3,5" class="rar-input rar-input-compact" value="3" required>
                     </label>
-                    <label class="rar-field">
+                    <label class="rar-field rar-field-compact">
                         <span>Zielprognose-Offset (Minuten)</span>
-                        <input type="number" id="targetOffsetTime" placeholder="z.B. 6" class="rar-input" min="0" step="0.01" value="6" required>
+                        <input type="text" inputmode="decimal" id="targetOffsetTime" placeholder="z.B. 6,5" class="rar-input rar-input-compact" value="6" required>
                     </label>
                     <label class="rar-field">
                         <span>Fahrer</span>

@@ -10,6 +10,8 @@
     --rar-control-bg-muted: #0b1118;
     --rar-control-bg-dark: #060a10;
     --rar-control-bg-focus: #253244;
+    --rar-select-bg: var(--rar-control-bg-dark);
+    --rar-select-option-bg: var(--rar-surface);
     --rar-text: #c9d1d9;
     --rar-heading: #d8dee5;
     --rar-text-bright: #f0f6fc;
@@ -315,6 +317,15 @@ body:has(.rar-public-container) .wp-block-post-title {
     line-height: 1.2;
 }
 
+.rar-field-compact {
+    align-self: start;
+    gap: 4px;
+}
+
+.rar-field-compact span {
+    min-height: 0;
+}
+
 .rar-input {
     width: 100%;
     min-height: 48px;
@@ -326,6 +337,13 @@ body:has(.rar-public-container) .wp-block-post-title {
     font-size: 16px;
     line-height: 1.25;
     box-shadow: none;
+}
+
+.rar-input-compact {
+    max-width: 150px;
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 15px;
 }
 
 .rar-input:focus {
@@ -991,8 +1009,27 @@ select.rar-input option {
 select.rar-input,
 select.rar-input option,
 select.rar-input optgroup {
-    color: var(--rar-text);
-    background: var(--rar-control-bg-dark);
+    color: var(--rar-text-bright);
+    background-color: var(--rar-select-bg);
+    border-color: var(--rar-border-strong);
+}
+
+select.rar-input option,
+select.rar-input optgroup {
+    color: var(--rar-text-bright);
+    background-color: var(--rar-select-option-bg);
+}
+
+select.rar-input option:checked,
+select.rar-input option:hover,
+select.rar-input option:focus {
+    color: var(--rar-text-inverse);
+    background-color: var(--rar-secondary);
+}
+
+select.rar-input:focus option:checked {
+    color: var(--rar-text-inverse);
+    background-color: var(--rar-secondary-hover);
 }
 
 input[type="datetime-local"].rar-input,

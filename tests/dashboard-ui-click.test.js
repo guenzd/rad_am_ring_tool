@@ -399,6 +399,13 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
             return ajaxResult(response);
         }
 
+        if (options.data.action === 'rar_delete_race') {
+            raceData.deleted = true;
+            const response = { success: true, data: { deleted: true } };
+            options.success(response);
+            return ajaxResult(response);
+        }
+
         if (options.data.action === 'rar_update_driver_plan_time') {
             const driver = raceData.drivers.find((candidate) => parseInt(candidate.id, 10) === parseInt(options.data.driver_id, 10));
 
@@ -477,6 +484,10 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
         harness.elements.get('#endRaceBtn').trigger('click');
     }
 
+    function clickDelete() {
+        harness.elements.get('#deleteRaceBtn').trigger('click');
+    }
+
     function clickForecastRemove(index) {
         const handler = harness.documentHandlers.find((entry) => {
             return entry.event === 'click' && entry.childSelector === '.rar-forecast-remove';
@@ -545,6 +556,7 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
         clickOkAt,
         clickUndo,
         clickEndAt,
+        clickDelete,
         clickForecastRemove,
         triggerDelegatedChange,
         getDriverByOrder,
@@ -1062,6 +1074,60 @@ test('advanced driver name save re-enables the input when focused rows skip rere
 
         assert.equal(context.raceData.drivers[0].driver_name, 'Daniel Sekunden');
         assert.equal(input.prop('disabled'), false);
+    } finally {
+        context.restore();
+    }
+});
+
+test('advanced delete race works for the currently loaded race even after auto load', () => {
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 33,
+            plannedEndTime: '2026-05-16 12:00:00',
+        }),
+        '2026-05-16T10:00:00',
+        {
+            publicView: false,
+        }
+    );
+
+    try {
+        context.loadDashboard();
+        context.clickLoadRace();
+
+        assert.equal(context.harness.elements.get('#raceSelect').val(), '33');
+        assert.equal(context.harness.elements.get('#deleteRaceBtn').prop('disabled'), false);
+
+        context.clickDelete();
+
+        assert.equal(context.raceData.deleted, true);
+        assert.equal(context.harness.elements.get('#setupSummaryStatus').text(), 'Kein Rennen geladen');
+    } finally {
+        context.restore();
+    }
+});
+
+test('advanced delete race also works after planned end time', () => {
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 34,
+            plannedEndTime: '2026-05-16 09:30:00',
+        }),
+        '2026-05-16T10:00:00',
+        {
+            publicView: false,
+        }
+    );
+
+    try {
+        context.loadDashboard();
+        context.clickLoadRace();
+
+        assert.equal(context.harness.elements.get('#deleteRaceBtn').prop('disabled'), false);
+        context.clickDelete();
+
+        assert.equal(context.raceData.deleted, true);
+        assert.equal(context.harness.elements.get('#setupSummaryStatus').text(), 'Kein Rennen geladen');
     } finally {
         context.restore();
     }

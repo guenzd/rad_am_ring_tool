@@ -1,6 +1,6 @@
 # Testing
 
-The race logic is tested with Node's built-in test runner. No npm packages are required.
+The race logic and key dashboard click flows are tested with Node's built-in test runner. No npm packages are required.
 
 ## Run Tests
 
@@ -16,14 +16,17 @@ npm run lint:js
 
 ## What Is Tested
 
-The tests live in `tests/race-logic.test.js` and cover the pure race rules from `assets/js/race-logic.js`.
+The tests live in:
+
+- `tests/race-logic.test.js` for pure JavaScript race rules from `assets/js/race-logic.js`
+- `tests/race-logic-php.test.php` for PHP queue/race helpers
+- `tests/dashboard-ui-click.test.js` for headless dashboard click flows
 
 ### Queue Parsing
 
 These tests verify that the queue format is interpreted correctly:
 
-- `1,2,1,2 | 1,2,3,4` means a one-time queue followed by a repeat queue.
-- ` | 1,2,3,4` means repeat-only from the start.
+- `1,2,1,2,3,4` is a flat queue.
 - Whitespace and commas both work.
 - Invalid tokens are ignored instead of breaking the queue.
 
@@ -31,8 +34,8 @@ These tests verify that the queue format is interpreted correctly:
 
 These tests verify which driver is assigned to each lap:
 
-- The one-time queue is consumed first.
-- The repeat queue loops after the one-time queue is finished.
+- The flat queue is used first.
+- If the configured queue ends, the default driver order continues.
 - If no queue is configured, the natural driver order is used.
 - Unknown queue numbers fall back to the natural driver order.
 
@@ -44,10 +47,24 @@ These tests protect the driver-switch behavior:
 - After a switch, the current driver is taken from the latest recorded switch target.
 - The next driver respects the current queue.
 - Reordering the queue during a race changes the next driver correctly.
-- Duplicate queue entries do not cause a driver to switch to themselves.
-- Fewer than two drivers means no switch is possible.
+- Duplicate queue entries intentionally allow double stints.
+- A single-driver queue can advance to the next round.
 
 This is the area that would catch the bug where the UI kept showing `1 -> 2`.
+
+### Dashboard Click Flows
+
+These tests run the real dashboard event handlers against a small fake DOM and fake AJAX layer. They cover:
+
+- Manual race start and start correction
+- Accelerated full-race simulations by moving `Date.now()`
+- Corrected switch times down to seconds
+- Queue quick edit via `-`
+- Repeated queue removals
+- Undo switch
+- Read-only/public mode protections
+- End race and delete race flows
+- Driver name save while the input remains focused
 
 ### Rotation Sorting
 

@@ -3,7 +3,7 @@
  * Plugin Name: Rad am Ring
  * Plugin URI: 
  * Description: 24-Stunden-Bike-Rennen-Fahrer- & Rundenverfolgungs-Tool
- * Version: 0.1.0
+ * Version: 0.1.1
  * Author: Daniel
  * Author URI: 
  * License: GPL-2.0+
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'RAR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'RAR_PLUGIN_VERSION', '0.1.0' );
+define( 'RAR_PLUGIN_VERSION', '0.1.1' );
 define( 'RAR_DB_VERSION', '0.6.0' );
 
 // Include required files
@@ -494,11 +494,6 @@ function rar_ajax_delete_race() {
     $data = RAR_Database::get_race_data( $race_id );
     if ( empty( $data['race'] ) ) {
         wp_send_json_error( 'Rennen nicht gefunden' );
-    }
-
-    $planned_end_time = rar_parse_local_datetime( $data['race']->planned_end_time ?? '' );
-    if ( ! $planned_end_time || $planned_end_time <= new DateTimeImmutable( 'now', wp_timezone() ) ) {
-        wp_send_json_error( 'Rennen können nur gelöscht werden, wenn die geplante Zielzeit in der Zukunft liegt' );
     }
 
     $deleted = RAR_Database::delete_race( $race_id );

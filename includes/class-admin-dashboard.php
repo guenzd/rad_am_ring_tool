@@ -42,14 +42,14 @@ class RAR_Admin_Dashboard {
             'rar-dashboard-css',
             RAR_PLUGIN_URL . 'assets/css/dashboard.css',
             [],
-            RAR_PLUGIN_VERSION
+            filemtime( RAR_PLUGIN_DIR . 'assets/css/dashboard.css' )
         );
 
         wp_enqueue_script(
             'rar-race-logic-js',
             RAR_PLUGIN_URL . 'assets/js/race-logic.js',
             [],
-            RAR_PLUGIN_VERSION,
+            filemtime( RAR_PLUGIN_DIR . 'assets/js/race-logic.js' ),
             true
         );
 
@@ -57,7 +57,7 @@ class RAR_Admin_Dashboard {
             'rar-dashboard-js',
             RAR_PLUGIN_URL . 'assets/js/dashboard.js',
             [ 'jquery', 'rar-race-logic-js' ],
-            RAR_PLUGIN_VERSION,
+            filemtime( RAR_PLUGIN_DIR . 'assets/js/dashboard.js' ),
             true
         );
 

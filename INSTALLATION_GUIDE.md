@@ -7,9 +7,10 @@ A complete, ready-to-install WordPress plugin for tracking 24-hour bike races. T
 - ✅ Database schema with 4 optimized tables
 - ✅ Admin dashboard with night-proof dark UI
 - ✅ AJAX-based interface (no page reloads)
-- ✅ Complete race/driver/lap tracking
-- ✅ Driver rotation logging
-- ✅ Real-time statistics
+- ✅ Complete race, driver, queue, and switch tracking
+- ✅ Second-accurate race start and driver switch corrections
+- ✅ Public read-only live dashboard
+- ✅ Queue prognosis, quick queue editing, and race-end buffer forecast
 
 ## Installation Steps
 
@@ -52,46 +53,39 @@ A complete, ready-to-install WordPress plugin for tracking 24-hour bike races. T
 
 ### Creating a Race
 
-1. Click the **"Start New Race"** button
-2. Enter a race name (e.g., "24h Ring 2026 - Team A")
-3. The race is created and dashboard appears
+1. Enter a race name (e.g., "24h Ring 2026 - Team A")
+2. Set start time and cutoff / target time
+3. Enter first-lap offset and target-prognosis offset in minutes
+4. Enter driver names as a comma-separated list
+5. Click **"Neues Rennen starten"**
 
-### Adding Drivers
+### Managing Drivers
 
-1. In the **"Add Driver"** section:
-   - Driver Name: Required (e.g., "Daniel")
-   - Avg Lap Time: Optional (in seconds, e.g., "420.5" for 7 minutes)
-2. Click **"Add Driver"**
-3. Driver appears in the "Drivers & Stats" card
+Drivers are created from the comma-separated list when the race is created. In the dashboard you can edit each driver's name and planned lap time directly in **Fahrer & Statistiken**.
 
-### Recording Laps (Main Task)
-
-**The large green button is designed for quick one-handed operation at night:**
-
-1. Select the **Current Driver** from dropdown
-2. Enter the **Lap Time** (in seconds)
-3. Click the big **"✓ RECORD LAP"** button
-4. Lap is recorded instantly and stats update
-
-**Example lap time entry:**
-- 7 minutes 30 seconds = 450 seconds
-- 6 minutes 20 seconds = 380 seconds
+Planned lap times are entered in minutes as decimal values, for example `45`, `45.5`, or `45,5`.
 
 ### Logging Driver Switches
 
-1. In **"Driver Switch"** section:
-   - From Driver: Who just finished
-   - To Driver: Who's taking over
-2. Click **"Switch Driver"**
-3. Switch appears in "Switch History"
+1. Use the **Fahrerwechsel** card.
+2. Before the first switch, the correction field adjusts the race start time.
+3. After the race has started, the main button logs the next driver switch.
+4. If the queue contains a double stint, the button changes to **Nächste Runde**.
+5. Use the correction field when a switch needs to be stored with a manual time.
 
 ### Viewing Statistics
 
 Each driver card shows:
 - **Driver Name**
-- **Laps**: Total laps completed
-- **Avg**: Average lap time (seconds)
-- **Total**: Total time spent (minutes)
+- **Runden**: Completed laps
+- **Noch**: Projected remaining laps
+- **Plan**: Planned lap time in minutes
+- **3er Ø**: Rolling average from the last three inferred laps
+- **Runde / Nächster**: Countdown for the current or next ride
+
+### Queue Prognosis
+
+The **Wechsel-Prognose** queue shows upcoming stints through the race cutoff. The `-` button removes exactly that upcoming stint and refills the queue from the default driver order pattern.
 
 ### Ending a Race
 
@@ -109,12 +103,17 @@ wp_rar_race_sessions
 ├── race_name (string)
 ├── start_time (datetime)
 ├── end_time (datetime, nullable)
+├── planned_end_time (datetime, nullable)
+├── first_lap_extra_time (decimal, in seconds)
+├── target_offset_time (decimal, in seconds)
+├── rotation_sequence (text, nullable)
 ├── total_laps (int)
 └── notes (text, nullable)
 
 wp_rar_drivers
 ├── id (int, primary key)
 ├── race_id (int, foreign key)
+├── driver_order (int)
 ├── driver_name (string)
 ├── avg_lap_time (decimal)
 ├── total_laps (int)
@@ -140,10 +139,10 @@ wp_rar_driver_rotations
 
 The UI is optimized for **24-hour use**:
 
-- **Dark background** (#1a1a1a) reduces eye strain at night
-- **High contrast** green (#00ff00) and blue (#0099ff) text
-- **Large buttons** (70px minimum height) for gloved operation
-- **High-contrast hover states** with glow effects
+- **Dark GitHub-inspired palette** reduces eye strain at night
+- **High-contrast driver colors** keep queue cards scannable
+- **Large action buttons** for quick operation
+- **Strong focus/hover states** for operational clarity
 - **Responsive design** works on phones, tablets, laptops
 
 ## Accessing Data Later
@@ -196,22 +195,21 @@ rad-am-ring-plugin/
         └── dashboard.js     # AJAX & UI logic
 ```
 
-## Next Steps / Future Enhancements
+## Current Capabilities
 
-Currently you can:
-- ✅ Create races
-- ✅ Add drivers
-- ✅ Record lap times
-- ✅ Log driver switches
-- ✅ View statistics
+- ✅ Create, load, end, and delete races
+- ✅ Manage drivers and planned lap times
+- ✅ Correct race start and switch times to the second
+- ✅ Forecast upcoming driver changes through the race cutoff
+- ✅ Quick-edit the queue from the forecast
+- ✅ Show first-lap and target-offset aware race-end buffer
+- ✅ Public read-only dashboard for blog readers
+- ✅ Excel export after race end
 
-Easy future additions:
-- [ ] Lap time prognosis (predict next driver change)
-- [ ] CSV export for analysis
-- [ ] First lap adjustment (-7 minutes)
-- [ ] Configurable lap length per race
-- [ ] Mobile-optimized views
+Possible future additions:
 - [ ] Offline support (PWA)
+- [ ] Additional export formats if needed
+- [ ] Dedicated mobile app integration
 
 ## Performance Notes
 

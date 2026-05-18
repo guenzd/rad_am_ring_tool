@@ -43,6 +43,9 @@ jQuery(document).ready(function($) {
                                 .text(race.race_name + ' (' + race.start_time + ')')
                         );
                     });
+                    if (currentRaceId) {
+                        $('#raceSelect').val(currentRaceId);
+                    }
                     updateDeleteRaceButton();
 
                     if (publicView) {
@@ -86,8 +89,8 @@ jQuery(document).ready(function($) {
         let raceName = $('#raceName').val().trim();
         let startTime = $('#raceStartTime').val();
         let plannedEndTime = $('#plannedEndTime').val();
-        let firstLapExtraTime = parseFloat($('#firstLapExtraTime').val());
-        let targetOffsetTime = parseFloat($('#targetOffsetTime').val());
+        let firstLapExtraTime = parseDecimalInput($('#firstLapExtraTime').val());
+        let targetOffsetTime = parseDecimalInput($('#targetOffsetTime').val());
         let defaultDriverNames = $('#defaultDriverNames').val();
         
         if (!raceName) {
@@ -171,17 +174,13 @@ jQuery(document).ready(function($) {
         let raceId = $('#raceSelect').val();
         let race = getRaceById(raceId);
 
-        if (!race || !canDeleteRace(race)) {
-            showMessage('Dieses Rennen kann nur gelöscht werden, wenn die geplante Zielzeit in der Zukunft liegt', 'error');
+        if (!race) {
+            showMessage('Bitte wählen Sie ein Rennen', 'error');
             updateDeleteRaceButton();
             return;
         }
 
         if (!confirm('Rennen "' + race.race_name + '" wirklich löschen?')) {
-            return;
-        }
-
-        if (isRacePlannedEndInFuture(race) && !confirm('Das Rennen liegt noch vor der geplanten Zielzeit. Trotzdem endgültig löschen?')) {
             return;
         }
 
@@ -198,8 +197,12 @@ jQuery(document).ready(function($) {
                     if (String(currentRaceId) === String(raceId)) {
                         currentRaceId = null;
                         raceData = null;
+                        $('#raceSelect').val('');
                         $('#addDriverPanel').hide();
                         $('#raceContent').hide();
+                        $('#exportRaceBtn').hide().attr('href', '#');
+                        $('#setupSummaryStatus').text('Kein Rennen geladen');
+                        $('#raceSetupPanel').prop('open', true);
                         stopForecastTimer();
                     }
 
@@ -235,6 +238,8 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     raceData = response.data;
+                    $('#raceSelect').val(currentRaceId);
+                    updateDeleteRaceButton();
                     $('#activeRaceName').text(raceData.race.race_name);
                     $('#setupSummaryStatus').text(raceData.race.race_name);
                     $('#raceSetupPanel').prop('open', false);
@@ -907,6 +912,10 @@ jQuery(document).ready(function($) {
         return RARRaceLogic.parseRotationSequence(value);
     }
 
+    function parseDecimalInput(value) {
+        return parseFloat(String(value || '').replace(',', '.'));
+    }
+
     function getCurrentRotationSequenceValue() {
         let field = $('#rotationSequence');
 
@@ -1218,19 +1227,9 @@ jQuery(document).ready(function($) {
         }) || null;
     }
 
-    function canDeleteRace(race) {
-        return isRacePlannedEndInFuture(race);
-    }
-
-    function isRacePlannedEndInFuture(race) {
-        let plannedEndTime = parseWpDate(race && race.planned_end_time);
-
-        return plannedEndTime && plannedEndTime.getTime() > Date.now();
-    }
-
     function updateDeleteRaceButton() {
         let race = getRaceById($('#raceSelect').val());
-        $('#deleteRaceBtn').prop('disabled', !canEdit || !race || !canDeleteRace(race));
+        $('#deleteRaceBtn').prop('disabled', !canEdit || !race);
     }
 
     function buildForecastItems(sequence) {
