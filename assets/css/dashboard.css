@@ -66,7 +66,8 @@
     background: var(--rar-page-bg);
 }
 
-body:has(.rar-public-container) {
+body:has(.rar-public-container),
+body.rar-public-dashboard-page {
     background: var(--rar-page-bg);
 }
 
@@ -85,17 +86,33 @@ body:has(.rar-public-container) {
 }
 
 .rar-public-container {
-    position: relative;
-    width: 100vw;
-    max-width: none;
+    max-width: 1464px;
     min-height: 0;
-    margin: 16px calc(50% - 50vw) 32px;
-    padding: 0 clamp(16px, 2vw, 40px);
+    margin: 12px auto 40px;
+    padding: 0 22px 32px;
 }
 
 body:has(.rar-public-container) .entry-title,
-body:has(.rar-public-container) .wp-block-post-title {
+body:has(.rar-public-container) .wp-block-post-title,
+body.rar-public-dashboard-page .entry-title,
+body.rar-public-dashboard-page .wp-block-post-title {
     display: none;
+}
+
+body:has(.rar-public-container) .entry-content,
+body:has(.rar-public-container) .wp-block-post-content,
+body:has(.rar-public-container) .wp-site-blocks,
+body.rar-public-dashboard-page .entry-content,
+body.rar-public-dashboard-page .wp-block-post-content,
+body.rar-public-dashboard-page .wp-site-blocks {
+    max-width: none;
+}
+
+body:has(.rar-public-container) .entry-content > *,
+body:has(.rar-public-container) .wp-block-post-content > *,
+body.rar-public-dashboard-page .entry-content > *,
+body.rar-public-dashboard-page .wp-block-post-content > * {
+    max-width: none;
 }
 
 .rar-content {

@@ -11,6 +11,19 @@ class RAR_Public_Dashboard {
 
     public function __construct() {
         add_shortcode( 'rad_am_ring_public', [ $this, 'render_shortcode' ] );
+        add_filter( 'body_class', [ $this, 'body_class' ] );
+    }
+
+    public function body_class( $classes ) {
+        if ( is_singular() ) {
+            $post = get_post();
+
+            if ( $post && has_shortcode( $post->post_content, 'rad_am_ring_public' ) ) {
+                $classes[] = 'rar-public-dashboard-page';
+            }
+        }
+
+        return $classes;
     }
 
     public function render_shortcode( $atts ) {
