@@ -5,6 +5,8 @@
         root.RARRaceLogic = factory();
     }
 }(typeof self !== 'undefined' ? self : this, function() {
+    const DEFAULT_FINAL_LAP_OFFSET_SECONDS = 5 * 60;
+
     function parseRotationSequence(value) {
         return String(value || '')
             .split(/[\s,]+/)
@@ -221,10 +223,10 @@
         let startTime = parseDate(raceData.race.start_time);
         let plannedEndTime = parseDate(raceData.race.planned_end_time);
         let firstLapExtra = parseFloat(raceData.race.first_lap_extra_time || 0);
-        let targetOffset = parseFloat(raceData.race.target_offset_time || 0);
-        let effectiveEndTime = addSeconds(plannedEndTime, targetOffset);
+        let finalLapOffset = getFinalLapOffsetSeconds(raceData.race);
+        let finalLapCutoffTime = addSeconds(plannedEndTime, finalLapOffset);
 
-        if (!startTime || !plannedEndTime || effectiveEndTime.getTime() <= startTime.getTime()) {
+        if (!startTime || !plannedEndTime || finalLapCutoffTime.getTime() <= startTime.getTime()) {
             return null;
         }
 
@@ -236,7 +238,7 @@
         let lastCrossingTime = new Date(baseTime.getTime());
 
         for (let lapIndex = lapStats.completedLaps; lapIndex < 2000; lapIndex++) {
-            let lap = getProjectedLap(raceData.drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, effectiveEndTime);
+            let lap = getProjectedLap(raceData.drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, plannedEndTime, finalLapCutoffTime);
 
             if (!lap) {
                 break;
@@ -255,10 +257,10 @@
             }
         }
 
-        return buildLapPrognosisResult(laps, effectiveEndTime, lastCrossingTime);
+        return buildLapPrognosisResult(laps, finalLapCutoffTime, lastCrossingTime);
     }
 
-    function getProjectedLap(drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, effectiveEndTime) {
+    function getProjectedLap(drivers, sequence, lapIndex, projectedTime, lapStats, firstLapExtra, plannedEndTime, finalLapCutoffTime) {
         let driver = getDriverForLap(lapIndex, drivers, sequence);
 
         if (!driver) {
@@ -267,16 +269,24 @@
 
         let lapSeconds = getForecastLapSeconds(driver, lapStats) + (lapIndex === 0 ? firstLapExtra : 0);
         let crossingTime = addSeconds(projectedTime, lapSeconds);
+        let startedAfterPlannedEnd = projectedTime.getTime() >= plannedEndTime.getTime();
+        let isFinal = startedAfterPlannedEnd || crossingTime.getTime() >= finalLapCutoffTime.getTime();
 
         return {
-            canCount: crossingTime.getTime() <= effectiveEndTime.getTime(),
+            canCount: crossingTime.getTime() <= finalLapCutoffTime.getTime() || isFinal,
             crossingTime: crossingTime,
-            isFinal: crossingTime.getTime() >= effectiveEndTime.getTime()
+            isFinal: isFinal
         };
     }
 
     function addSeconds(date, seconds) {
         return new Date(date.getTime() + (seconds * 1000));
+    }
+
+    function getFinalLapOffsetSeconds(race) {
+        let targetOffset = parseFloat(race && race.target_offset_time ? race.target_offset_time : 0);
+
+        return targetOffset > 0 ? targetOffset : DEFAULT_FINAL_LAP_OFFSET_SECONDS;
     }
 
     function buildLapPrognosisResult(laps, plannedEndTime, lastCrossingTime) {

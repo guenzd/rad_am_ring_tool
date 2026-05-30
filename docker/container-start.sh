@@ -19,6 +19,8 @@ WORDPRESS_DB_NAME="${WORDPRESS_DB_NAME:-wordpress}"
 WORDPRESS_DB_USER="${WORDPRESS_DB_USER:-wordpress}"
 WORDPRESS_DB_PASSWORD="${WORDPRESS_DB_PASSWORD:-wordpress}"
 MARIADB_ROOT_PASSWORD="${MARIADB_ROOT_PASSWORD:-root}"
+WORDPRESS_IMAGE="${CONTAINER_WORDPRESS_IMAGE:-docker.io/library/wordpress:7.0.0-php8.2-apache}"
+MARIADB_IMAGE="${CONTAINER_MARIADB_IMAGE:-docker.io/library/mariadb:10.11}"
 
 NETWORK="${CONTAINER_NETWORK:-rad-am-ring}"
 DB_CONTAINER="${CONTAINER_DB_NAME:-rad-am-ring-db}"
@@ -61,7 +63,7 @@ else
     --env "MARIADB_PASSWORD=$WORDPRESS_DB_PASSWORD" \
     --env "MARIADB_ROOT_PASSWORD=$MARIADB_ROOT_PASSWORD" \
     --volume "$DB_VOLUME:/var/lib/mysql" \
-    docker.io/library/mariadb:10.11
+    "$MARIADB_IMAGE"
 fi
 
 if ! container_exists "$DB_CONTAINER"; then
@@ -96,7 +98,7 @@ define( 'WP_DEBUG_DISPLAY', false );
 define( 'SCRIPT_DEBUG', true );" \
     --volume "$WP_VOLUME:/var/www/html" \
     --volume "$PROJECT_ROOT:/var/www/html/wp-content/plugins/rad-am-ring-plugin" \
-    docker.io/library/wordpress:6.9.4-php8.2-apache
+    "$WORDPRESS_IMAGE"
 fi
 
 printf '%s\n' "WordPress container is starting: http://localhost:$WORDPRESS_PORT"

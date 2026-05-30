@@ -5,9 +5,9 @@
     --rar-page-bg: #0d1117;
     --rar-surface: #161b22;
     --rar-surface-soft: #21262d;
-    --rar-panel-dark: #05070a;
+    --rar-panel-dark: var(--rar-control-bg-dark);
     --rar-control-bg: #1f2937;
-    --rar-control-bg-muted: #0b1118;
+    --rar-control-bg-muted: var(--rar-control-bg-dark);
     --rar-control-bg-dark: #060a10;
     --rar-control-bg-focus: #253244;
     --rar-select-bg: var(--rar-control-bg-dark);
@@ -15,37 +15,31 @@
     --rar-text: #c9d1d9;
     --rar-heading: #d8dee5;
     --rar-text-bright: #f0f6fc;
-    --rar-text-inverse: #ffffff;
+    --rar-text-inverse: var(--rar-text-bright);
     --rar-text-on-warning: #15100a;
     --rar-text-danger-soft: #ffd7d4;
     --rar-muted: #8b949e;
-    --rar-muted-strong: #9aa7b6;
+    --rar-muted-strong: var(--rar-muted);
     --rar-border: #30363d;
     --rar-border-strong: #484f58;
     --rar-control-border: #4b5563;
-    --rar-control-border-muted: #242c36;
-    --rar-badge-bg: #151b23;
-    --rar-badge-border-current: #3d444d;
+    --rar-control-border-muted: var(--rar-border);
+    --rar-badge-bg: var(--rar-surface);
+    --rar-badge-border-current: var(--rar-border-strong);
     --rar-primary: #58a6ff;
-    --rar-primary-hover: #79c0ff;
+    --rar-primary-hover: var(--rar-primary);
     --rar-secondary: #1f6feb;
-    --rar-secondary-hover: #388bfd;
+    --rar-secondary-hover: var(--rar-secondary);
     --rar-success: #3fb950;
-    --rar-success-hover: #2ea043;
+    --rar-success-hover: var(--rar-success);
     --rar-danger: #f85149;
-    --rar-danger-hover: #da3633;
     --rar-danger-bg: #8e201b;
     --rar-danger-bg-dark: #5c1713;
-    --rar-danger-bg-hover: #a52822;
+    --rar-danger-bg-hover: var(--rar-danger-bg);
     --rar-warning: #f4c542;
-    --rar-warning-bg: #34280f;
-    --rar-warning-border: #9f7d24;
     --rar-neutral-action: #384454;
-    --rar-neutral-action-hover: #4a596c;
-    --rar-success-surface: #101b16;
+    --rar-neutral-action-hover: var(--rar-neutral-action);
     --rar-focus-ring: rgba(88, 166, 255, 0.18);
-    --rar-focus-ring-soft: rgba(88, 166, 255, 0.14);
-    --rar-focus-ring-old: rgba(17, 119, 170, 0.35);
     --rar-shadow-soft: 0 3px 0 rgba(0, 0, 0, 0.35);
     --rar-shadow-strong: 0 10px 24px rgba(0, 0, 0, 0.38);
     --rar-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
@@ -61,6 +55,11 @@
     --rar-driver-red: #ff6b5f;
     --rar-driver-red-bg: #371916;
     --rar-driver-red-border: #aa3d34;
+    --rar-driver-order-width: 30px;
+    --rar-driver-name-width: 180px;
+    --rar-driver-name-input-width: 170px;
+    --rar-driver-plan-input-width: 56px;
+    --rar-driver-stats-columns: minmax(56px, 0.65fr) minmax(52px, 0.58fr) minmax(64px, 0.68fr) minmax(70px, 0.74fr) minmax(116px, 1.35fr);
 }
 
 #wpbody-content {
@@ -178,6 +177,19 @@ body:has(.rar-public-container) .wp-block-post-title {
     justify-content: flex-end;
 }
 
+.rar-current-clock {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 2px 7px;
+    color: var(--rar-text);
+    border-bottom: 3px solid var(--rar-primary);
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
 .rar-readonly-badge {
     display: inline-flex;
     align-items: center;
@@ -213,11 +225,6 @@ body:has(.rar-public-container) .wp-block-post-title {
     border: 1px solid var(--rar-border);
     border-top: 5px solid var(--rar-primary);
     box-shadow: var(--rar-shadow-soft);
-}
-
-.rar-card:hover {
-    border-color: var(--rar-border-strong);
-    box-shadow: var(--rar-shadow-strong);
 }
 
 .rar-card h3 {
@@ -270,12 +277,16 @@ body:has(.rar-public-container) .wp-block-post-title {
     display: grid;
     grid-row: span 2;
     grid-template-rows: auto minmax(0, 1fr);
-    border-top-color: var(--rar-danger);
+    border-top-color: var(--rar-border-strong);
 }
 
 .rar-card-switch {
-    border-top-color: var(--rar-success);
-    background: var(--rar-success-surface);
+    border-top-color: var(--rar-border-strong);
+    background: var(--rar-surface);
+}
+
+.rar-card-drivers {
+    border-top-color: var(--rar-border-strong);
 }
 
 .rar-switch-layout {
@@ -331,12 +342,13 @@ body:has(.rar-public-container) .wp-block-post-title {
     min-height: 48px;
     padding: 12px 14px;
     color: var(--rar-text);
-    background: var(--rar-page-bg);
-    border: 1px solid var(--rar-border-strong);
+    background: var(--rar-control-bg-dark);
+    border: 1px solid var(--rar-control-border-muted);
     border-radius: 0;
     font-size: 16px;
     line-height: 1.25;
     box-shadow: none;
+    color-scheme: dark;
 }
 
 .rar-input-compact {
@@ -348,14 +360,64 @@ body:has(.rar-public-container) .wp-block-post-title {
 
 .rar-input:focus {
     outline: 3px solid var(--rar-focus-ring);
-    border-color: var(--rar-primary);
-    background: var(--rar-page-bg);
+    border-color: var(--rar-badge-border-current);
+    background: var(--rar-control-bg-muted);
+}
+
+.rar-input::placeholder,
+.rar-driver-name-input::placeholder,
+.rar-driver-plan-time::placeholder {
+    color: var(--rar-muted);
 }
 
 select.rar-input,
-select.rar-input option {
+select.rar-input option,
+select.rar-input optgroup {
+    color: var(--rar-text-bright);
+    background-color: var(--rar-select-bg);
+    border-color: var(--rar-border-strong);
+}
+
+select.rar-input option,
+select.rar-input optgroup {
+    background-color: var(--rar-select-option-bg);
+}
+
+select.rar-input option:checked,
+select.rar-input option:hover,
+select.rar-input option:focus {
+    color: var(--rar-text-inverse);
+    background-color: var(--rar-secondary);
+}
+
+select.rar-input:focus option:checked {
+    background-color: var(--rar-secondary-hover);
+}
+
+input[type="datetime-local"].rar-input,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-fields-wrapper,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-text,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-day-field,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-month-field,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-year-field,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-hour-field,
+input[type="datetime-local"].rar-input::-webkit-datetime-edit-minute-field,
+input[type="datetime-local"].rar-input::-webkit-calendar-picker-indicator {
     color: var(--rar-text);
-    background: var(--rar-page-bg);
+    background: var(--rar-control-bg-dark);
+}
+
+input[type="datetime-local"].rar-input::-webkit-calendar-picker-indicator {
+    filter: invert(0.75);
+    opacity: 0.85;
+}
+
+input.rar-input:-webkit-autofill,
+.rar-driver-name-input:-webkit-autofill,
+.rar-driver-plan-time:-webkit-autofill {
+    -webkit-text-fill-color: var(--rar-text);
+    box-shadow: 0 0 0 1000px var(--rar-control-bg-dark) inset;
 }
 
 .rar-textarea {
@@ -385,7 +447,7 @@ select.rar-input option {
 }
 
 .rar-btn:focus-visible {
-    outline: 3px solid var(--rar-focus-ring-old);
+    outline: 3px solid var(--rar-focus-ring);
     outline-offset: 2px;
 }
 
@@ -421,12 +483,12 @@ select.rar-input option {
 
 .rar-btn-danger {
     width: 100%;
-    color: var(--rar-text-inverse);
-    background: var(--rar-danger);
+    color: var(--rar-text-danger-soft);
+    background: var(--rar-danger-bg);
 }
 
 .rar-btn-danger:hover {
-    background: var(--rar-danger-hover);
+    background: var(--rar-danger-bg-hover);
     box-shadow: var(--rar-shadow-strong);
 }
 
@@ -459,10 +521,13 @@ select.rar-input option {
 
 .rar-driver-card {
     display: grid;
-    grid-template-columns: auto minmax(160px, 1.15fr) minmax(0, 2.85fr);
+    grid-template-columns: var(--rar-driver-order-width) var(--rar-driver-name-width) minmax(0, 1fr);
     gap: 10px;
     align-items: center;
-    padding: 10px 12px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 9px 10px;
     background: var(--rar-driver-bg, var(--rar-surface-soft));
     border: 1px solid var(--rar-driver-border, var(--rar-border));
     border-left: 7px solid var(--rar-driver-color, var(--rar-danger));
@@ -471,7 +536,7 @@ select.rar-input option {
 }
 
 .rar-driver-card:focus-visible {
-    outline: 3px solid var(--rar-focus-ring-old);
+    outline: 3px solid var(--rar-focus-ring);
     outline-offset: 2px;
 }
 
@@ -502,7 +567,7 @@ select.rar-input option {
 .rar-driver-order {
     position: static;
     color: var(--rar-muted);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 800;
 }
 
@@ -523,25 +588,40 @@ select.rar-input option {
 .rar-driver-name-field {
     display: grid;
     gap: 4px;
+    width: var(--rar-driver-name-width);
+    max-width: var(--rar-driver-name-width);
 }
 
 .rar-driver-name-field small {
     color: var(--rar-muted);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
 }
 
-.rar-driver-name-input {
-    width: 100%;
+.rar-container input.rar-driver-name-input {
+    width: var(--rar-driver-name-input-width);
+    max-width: var(--rar-driver-name-input-width);
     min-width: 0;
-    height: 30px;
-    padding: 4px 7px;
+    height: 32px;
+    padding: 4px 8px;
     color: var(--rar-heading);
     background: var(--rar-control-bg);
+    background-color: var(--rar-control-bg);
     border: 1px solid var(--rar-control-border);
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 900;
+    appearance: none;
+    -webkit-appearance: none;
+    color-scheme: dark;
+}
+
+.rar-container input.rar-driver-name-input:focus,
+.rar-container input.rar-driver-plan-time:focus {
+    color: var(--rar-text-bright);
+    background: var(--rar-control-bg-focus);
+    border-color: var(--rar-primary);
+    outline-color: var(--rar-focus-ring);
 }
 
 .rar-driver-card.is-driver-focused {
@@ -558,14 +638,20 @@ select.rar-input option {
 
 .rar-driver-stats-row {
     display: grid;
-    grid-template-columns: minmax(52px, 0.76fr) minmax(52px, 0.76fr) minmax(74px, 0.95fr) minmax(70px, 0.9fr) minmax(88px, 1.08fr);
+    grid-template-columns: var(--rar-driver-stats-columns);
     gap: 6px;
+    justify-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .rar-driver-stats-row span,
 .rar-driver-plan-field {
     min-width: 0;
-    padding: 6px 8px;
+    overflow: hidden;
+    padding: 6px 7px;
     background: var(--rar-control-bg-muted);
     border: 1px solid var(--rar-control-border-muted);
 }
@@ -574,6 +660,7 @@ select.rar-input option {
 .rar-driver-plan-field small {
     display: block;
     color: var(--rar-heading);
+    overflow: hidden;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
@@ -585,26 +672,35 @@ select.rar-input option {
     margin: 0;
 }
 
-.rar-driver-plan-time {
-    width: 100%;
+.rar-container input.rar-driver-plan-time {
+    width: var(--rar-driver-plan-input-width);
+    max-width: var(--rar-driver-plan-input-width);
     min-width: 0;
-    height: 24px;
-    padding: 2px 5px;
+    height: 28px;
+    padding: 3px 6px;
     color: var(--rar-heading);
     background: var(--rar-control-bg);
+    background-color: var(--rar-control-bg);
     border: 1px solid var(--rar-control-border);
     font-size: 13px;
     font-weight: 900;
+    appearance: none;
+    -webkit-appearance: none;
+    color-scheme: dark;
 }
 
 .rar-driver-stats-row strong {
     display: block;
-    overflow: hidden;
+    overflow: visible;
     color: var(--rar-heading);
     font-size: 13px;
     font-weight: 900;
-    text-overflow: ellipsis;
+    text-overflow: clip;
     white-space: nowrap;
+}
+
+.rar-driver-stats-row span:last-child strong {
+    font-size: 12px;
 }
 
 .rar-log {
@@ -741,7 +837,7 @@ select.rar-input option {
 }
 
 .rar-forecast-remove:hover {
-    background: var(--rar-danger);
+    background: var(--rar-neutral-action-hover);
 }
 
 .rar-forecast-meta {
@@ -765,7 +861,7 @@ select.rar-input option {
     flex: 0 0 auto;
     min-height: 28px;
     padding: 4px 8px;
-    color: var(--rar-heading);
+    color: var(--rar-muted-strong);
     background: var(--rar-badge-bg);
     border: 1px solid var(--rar-border);
     font-size: 14px;
@@ -777,7 +873,7 @@ select.rar-input option {
 .rar-forecast-item.is-current .rar-forecast-meta strong,
 .rar-forecast-item.is-current .rar-forecast-lap,
 .rar-forecast-item.is-current .rar-forecast-driver-lap {
-    color: var(--rar-text-inverse);
+    color: var(--rar-text);
 }
 
 .rar-forecast-item.is-current .rar-forecast-lap,
@@ -852,11 +948,11 @@ select.rar-input option {
 
 .rar-switch-time-preview em {
     justify-self: end;
-    padding: 6px 10px;
+    padding: 7px 12px;
     color: var(--rar-text-on-warning);
     background: var(--rar-success);
     font-family: Consolas, Monaco, monospace;
-    font-size: 28px;
+    font-size: 34px;
     font-style: normal;
     font-weight: 900;
 }
@@ -940,200 +1036,6 @@ select.rar-input option {
     background: var(--rar-danger);
 }
 
-.rar-setup-panel > summary,
-.rar-card h3,
-.rar-collapsible-card > summary,
-.rar-field span,
-.rar-driver-name,
-.rar-driver-name-field,
-.rar-driver-name-input,
-.rar-driver-stats-row strong,
-.rar-driver-stats-row small,
-.rar-driver-plan-field small,
-.rar-driver-plan-time,
-.rar-forecast-order,
-.rar-forecast-name,
-.rar-switch-driver strong,
-.rar-switch-preview-panel .rar-switch-driver strong,
-.rar-forecast-meta strong {
-    color: var(--rar-heading);
-}
-
-.rar-input,
-select.rar-input,
-select.rar-input option {
-    color: var(--rar-text);
-}
-
-.rar-card,
-.rar-setup-panel {
-    background: var(--rar-surface);
-    border-color: var(--rar-border);
-    box-shadow: var(--rar-shadow-soft);
-}
-
-.rar-card:hover {
-    border-color: var(--rar-border-strong);
-    box-shadow: var(--rar-shadow-strong);
-}
-
-.rar-card-switch {
-    background: var(--rar-success-surface);
-}
-
-.rar-input,
-.rar-driver-name-input,
-.rar-driver-plan-time {
-    color: var(--rar-text);
-    background: var(--rar-control-bg-dark);
-    border-color: var(--rar-control-border-muted);
-    box-shadow: none;
-    color-scheme: dark;
-}
-
-.rar-input:focus,
-.rar-driver-name-input:focus,
-.rar-driver-plan-time:focus {
-    color: var(--rar-heading);
-    background: var(--rar-control-bg-muted);
-    border-color: var(--rar-badge-border-current);
-    outline-color: var(--rar-focus-ring-soft);
-}
-
-.rar-input::placeholder,
-.rar-driver-name-input::placeholder,
-.rar-driver-plan-time::placeholder {
-    color: var(--rar-muted);
-}
-
-select.rar-input,
-select.rar-input option,
-select.rar-input optgroup {
-    color: var(--rar-text-bright);
-    background-color: var(--rar-select-bg);
-    border-color: var(--rar-border-strong);
-}
-
-select.rar-input option,
-select.rar-input optgroup {
-    color: var(--rar-text-bright);
-    background-color: var(--rar-select-option-bg);
-}
-
-select.rar-input option:checked,
-select.rar-input option:hover,
-select.rar-input option:focus {
-    color: var(--rar-text-inverse);
-    background-color: var(--rar-secondary);
-}
-
-select.rar-input:focus option:checked {
-    color: var(--rar-text-inverse);
-    background-color: var(--rar-secondary-hover);
-}
-
-input[type="datetime-local"].rar-input,
-input[type="datetime-local"].rar-input::-webkit-datetime-edit,
-input[type="datetime-local"].rar-input::-webkit-datetime-edit-fields-wrapper,
-input[type="datetime-local"].rar-input::-webkit-datetime-edit-text,
-input[type="datetime-local"].rar-input::-webkit-datetime-edit-day-field,
-input[type="datetime-local"].rar-input::-webkit-datetime-edit-month-field,
-input[type="datetime-local"].rar-input::-webkit-datetime-edit-year-field,
-input[type="datetime-local"].rar-input::-webkit-datetime-edit-hour-field,
-input[type="datetime-local"].rar-input::-webkit-datetime-edit-minute-field,
-input[type="datetime-local"].rar-input::-webkit-calendar-picker-indicator {
-    color: var(--rar-text);
-    background: var(--rar-control-bg-dark);
-}
-
-input[type="datetime-local"].rar-input::-webkit-calendar-picker-indicator {
-    filter: invert(0.75);
-    opacity: 0.85;
-}
-
-input.rar-input:-webkit-autofill,
-.rar-driver-name-input:-webkit-autofill,
-.rar-driver-plan-time:-webkit-autofill {
-    -webkit-text-fill-color: var(--rar-text);
-    box-shadow: 0 0 0 1000px var(--rar-control-bg-dark) inset;
-}
-
-.rar-driver-stats-row span,
-.rar-driver-plan-field {
-    background: var(--rar-control-bg-muted);
-    border-color: var(--rar-control-border-muted);
-}
-
-.rar-driver-name-input,
-.rar-driver-plan-time {
-    appearance: none;
-    -webkit-appearance: none;
-    color: var(--rar-heading) !important;
-    background: var(--rar-control-bg) !important;
-    border-color: var(--rar-control-border) !important;
-}
-
-.rar-driver-name-input:focus,
-.rar-driver-plan-time:focus {
-    color: var(--rar-text-bright) !important;
-    background: var(--rar-control-bg-focus) !important;
-    border-color: var(--rar-primary) !important;
-}
-
-.rar-forecast-lap,
-.rar-forecast-driver-lap {
-    color: var(--rar-muted-strong);
-    background: var(--rar-badge-bg);
-    border-color: var(--rar-border);
-}
-
-.rar-forecast-item.is-current .rar-forecast-lap,
-.rar-forecast-item.is-current .rar-forecast-driver-lap {
-    color: var(--rar-text);
-    background: var(--rar-control-bg);
-    border-color: var(--rar-badge-border-current);
-}
-
-.rar-switch-time-preview,
-.rar-log {
-    background: var(--rar-panel-dark);
-}
-
-.rar-forecast-last-badge {
-    color: var(--rar-text-on-warning);
-    background: var(--rar-warning);
-}
-
-.rar-forecast-remove,
-#undoSwitchBtn {
-    background: var(--rar-neutral-action);
-}
-
-.rar-forecast-remove:hover,
-#undoSwitchBtn:hover {
-    background: var(--rar-neutral-action-hover);
-}
-
-.rar-readonly-badge {
-    color: var(--rar-text-on-warning);
-    background: var(--rar-warning);
-    border-left-color: var(--rar-panel-dark);
-}
-
-.rar-btn-danger {
-    color: var(--rar-text-danger-soft);
-    background: var(--rar-danger-bg);
-}
-
-.rar-btn-danger:hover {
-    background: var(--rar-danger-bg-hover);
-    box-shadow: var(--rar-shadow-strong);
-}
-
-.rar-message {
-    border-left-color: var(--rar-panel-dark);
-}
-
 @media (max-width: 782px) {
     .rar-container {
         margin-top: 10px;
@@ -1170,6 +1072,12 @@ input.rar-input:-webkit-autofill,
 
     .rar-driver-card {
         grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .rar-driver-name-field,
+    .rar-driver-name-input {
+        width: 100%;
+        max-width: 100%;
     }
 
     .rar-driver-stats-row {

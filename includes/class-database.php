@@ -576,7 +576,7 @@ class RAR_Database {
     /**
      * End a race session
      */
-    public static function end_race( $race_id ) {
+    public static function end_race( $race_id, $end_time = null ) {
         global $wpdb;
 
         // Count total laps
@@ -588,7 +588,7 @@ class RAR_Database {
         $wpdb->update(
             "{$wpdb->prefix}rar_race_sessions",
             [
-                'end_time' => current_time( 'mysql' ),
+                'end_time' => $end_time ?: current_time( 'mysql' ),
                 'total_laps' => $total_laps,
             ],
             [ 'id' => $race_id ],

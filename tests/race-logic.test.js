@@ -301,8 +301,8 @@ test('lap prognosis includes first lap extra time', () => {
 
     const prognosis = logic.calculateLapPrognosis(data, '1,2', parseDate);
 
-    assert.equal(prognosis.laps, 2);
-    assert.equal(prognosis.bufferMinutes, 1);
+    assert.equal(prognosis.laps, 3);
+    assert.equal(prognosis.bufferMinutes, -44);
 });
 
 test('final lap can finish when switch cutoff is reached after adding the finish-line delta', () => {
@@ -335,8 +335,8 @@ test('final lap buffer uses target time plus finish-line delta', () => {
 
     const prognosis = logic.calculateLapPrognosis(data, '1,2', parseDate);
 
-    assert.equal(prognosis.laps, 1);
-    assert.equal(prognosis.bufferMinutes, 44);
+    assert.equal(prognosis.laps, 2);
+    assert.equal(prognosis.bufferMinutes, -1);
 });
 
 test('first lap extra and target offset are independent', () => {
@@ -353,8 +353,8 @@ test('first lap extra and target offset are independent', () => {
 
     const prognosis = logic.calculateLapPrognosis(data, '1,2', parseDate);
 
-    assert.equal(prognosis.laps, 2);
-    assert.equal(prognosis.bufferMinutes, 6);
+    assert.equal(prognosis.laps, 3);
+    assert.equal(prognosis.bufferMinutes, -39);
 });
 
 test('lap prognosis starts from completed laps and latest real switch time', () => {
@@ -376,8 +376,8 @@ test('lap prognosis starts from completed laps and latest real switch time', () 
 
     const prognosis = logic.calculateLapPrognosis(data, '1,1,1,1,1', parseDate);
 
-    assert.equal(prognosis.laps, 4);
-    assert.equal(prognosis.bufferMinutes, 5);
+    assert.equal(prognosis.laps, 5);
+    assert.equal(prognosis.bufferMinutes, -34);
 });
 
 test('lap prognosis returns null for invalid race times', () => {

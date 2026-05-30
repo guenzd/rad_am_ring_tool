@@ -1,6 +1,6 @@
 services:
   wordpress:
-    image: wordpress:6.9.4-php8.2-apache
+    image: wordpress:7.0.0-php8.2-apache
     depends_on:
       db:
         condition: service_healthy

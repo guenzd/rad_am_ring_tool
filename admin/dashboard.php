@@ -39,7 +39,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </label>
                     <label class="rar-field rar-field-compact">
                         <span>Zielprognose-Offset (Minuten)</span>
-                        <input type="text" inputmode="decimal" id="targetOffsetTime" placeholder="z.B. 6,5" class="rar-input rar-input-compact" value="6" required>
+                        <input type="text" inputmode="decimal" id="targetOffsetTime" placeholder="z.B. 5" class="rar-input rar-input-compact" value="5" required>
                     </label>
                     <label class="rar-field">
                         <span>Fahrer</span>
@@ -75,6 +75,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             <div class="rar-race-title-row">
                 <h2 id="activeRaceName"></h2>
                 <div class="rar-race-title-actions">
+                    <div id="rarCurrentClock" class="rar-current-clock">--:--:--</div>
                     <div id="readOnlyBadge" class="rar-readonly-badge" style="display: none;">Nur Lesen</div>
                 </div>
             </div>

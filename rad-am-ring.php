@@ -19,6 +19,7 @@ define( 'RAR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'RAR_PLUGIN_VERSION', '0.1.1' );
 define( 'RAR_DB_VERSION', '0.6.0' );
+define( 'RAR_FIRST_SWITCH_LOCK_MINUTES', 15 );
 
 // Include required files
 require_once RAR_PLUGIN_DIR . 'includes/class-database.php';
@@ -372,7 +373,7 @@ function rar_is_first_switch_due( $race_data, $driver, $switched_at ) {
         return false;
     }
 
-    $first_switch_time = $start_time->modify( '+15 minutes' );
+    $first_switch_time = $start_time->modify( '+' . RAR_FIRST_SWITCH_LOCK_MINUTES . ' minutes' );
 
     return $switch_time >= $first_switch_time;
 }
@@ -492,11 +493,21 @@ function rar_ajax_end_race() {
     rar_require_edit_access();
 
     $race_id = intval( $_POST['race_id'] ?? 0 );
+    $end_time_input = sanitize_text_field( wp_unslash( $_POST['end_time'] ?? '' ) );
     if ( ! $race_id ) {
         wp_send_json_error( 'Ungültige Daten' );
     }
 
-    RAR_Database::end_race( $race_id );
+    $end_time = null;
+    if ( $end_time_input ) {
+        $end_datetime = rar_parse_local_datetime( $end_time_input );
+        if ( ! $end_datetime ) {
+            wp_send_json_error( 'Ungültige Endzeit' );
+        }
+        $end_time = $end_datetime->format( 'Y-m-d H:i:s' );
+    }
+
+    RAR_Database::end_race( $race_id, $end_time );
     wp_send_json_success( [ 'ended' => true ] );
 }
 

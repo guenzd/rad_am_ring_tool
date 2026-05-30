@@ -19,6 +19,9 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
 
             <div class="rar-race-title-row">
                 <h2 id="activeRaceName"><?php echo $public_race ? esc_html( $public_race->race_name ) : ''; ?></h2>
+                <div class="rar-race-title-actions">
+                    <div id="rarCurrentClock" class="rar-current-clock">--:--:--</div>
+                </div>
             </div>
 
             <div class="rar-card rar-card-switch">
