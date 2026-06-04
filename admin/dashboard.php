@@ -18,18 +18,18 @@ if ( ! defined( 'ABSPATH' ) ) {
             </summary>
             <div class="rar-section rar-setup-section">
             
-            <div class="rar-card">
+            <div class="rar-card rar-create-race-card">
                 <h3>Neues Rennen erstellen</h3>
-                <div class="rar-form-group">
-                    <label class="rar-field">
+                <div class="rar-form-group rar-create-race-form">
+                    <label class="rar-field rar-field-race-name">
                         <span>Rennname</span>
                         <input type="text" id="raceName" placeholder="Rennname" class="rar-input" required>
                     </label>
-                    <label class="rar-field">
+                    <label class="rar-field rar-field-time">
                         <span>Startzeit</span>
                         <input type="datetime-local" id="raceStartTime" class="rar-input" step="1" required>
                     </label>
-                    <label class="rar-field">
+                    <label class="rar-field rar-field-time">
                         <span>Cutoff / Zielzeit</span>
                         <input type="datetime-local" id="plannedEndTime" class="rar-input" step="1" required>
                     </label>
@@ -41,7 +41,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <span>Zielprognose-Offset (Minuten)</span>
                         <input type="text" inputmode="decimal" id="targetOffsetTime" placeholder="z.B. 5" class="rar-input rar-input-compact" value="5" required>
                     </label>
-                    <label class="rar-field">
+                    <label class="rar-field rar-field-drivers">
                         <span>Fahrer</span>
                         <textarea id="defaultDriverNames" class="rar-input rar-textarea">Daniel, Moritz, Heiko, Stefan</textarea>
                     </label>
@@ -70,15 +70,18 @@ if ( ! defined( 'ABSPATH' ) ) {
         </details>
 
         <!-- Active Race Display -->
-        <div id="raceContent" class="rar-section" style="display: none;">
+        <div id="raceContent" class="rar-section rar-race-section" style="display: none;">
             <input type="hidden" id="rotationSequence">
             <div class="rar-race-title-row">
                 <h2 id="activeRaceName"></h2>
+                <div id="raceEndCountdown" class="rar-race-end-countdown">--:--:--</div>
                 <div class="rar-race-title-actions">
                     <div id="rarCurrentClock" class="rar-current-clock">--:--:--</div>
                     <div id="readOnlyBadge" class="rar-readonly-badge" style="display: none;">Nur Lesen</div>
                 </div>
             </div>
+
+            <div class="rar-race-main-column">
             <!-- Driver Switch -->
             <div class="rar-card rar-card-switch">
                 <h3>Fahrerwechsel</h3>
@@ -93,7 +96,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <span id="manualSwitchTimeLabel">Wechselzeit nachträglich korrigieren</span>
                                 <input type="datetime-local" id="manualSwitchTime" class="rar-input" step="1">
                             </label>
-                            <button type="button" id="switchDriverTimeOkBtn" class="rar-btn rar-btn-secondary">OK</button>
+                            <button id="updateLastSwitchTimeBtn" class="rar-btn">Wechsel editieren</button>
                         </div>
                         <div class="rar-switch-actions">
                             <button id="switchDriverBtn" class="rar-btn rar-btn-secondary">Fahrerwechsel</button>
@@ -101,12 +104,6 @@ if ( ! defined( 'ABSPATH' ) ) {
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Rotation Forecast -->
-            <div class="rar-card rar-card-forecast">
-                <h3>Wechsel-Prognose</h3>
-                <div id="swapForecast" class="rar-forecast-list"></div>
             </div>
 
             <!-- Current Drivers -->
@@ -126,6 +123,15 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <summary>Wechsel-Verlauf</summary>
                 <div id="switchLog" class="rar-log"></div>
             </details>
+            </div>
+
+            <div class="rar-race-side-column">
+            <!-- Rotation Forecast -->
+            <div class="rar-card rar-card-forecast">
+                <h3>Wechsel-Prognose</h3>
+                <div id="swapForecast" class="rar-forecast-list"></div>
+            </div>
+            </div>
         </div>
     </div>
 </div>

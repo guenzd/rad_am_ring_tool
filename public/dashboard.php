@@ -14,16 +14,18 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
 
 <div class="rar-container rar-public-container">
     <div class="rar-content">
-        <div id="raceContent" class="rar-section rar-public-section"<?php echo $public_race ? '' : ' style="display: none;"'; ?>>
+        <div id="raceContent" class="rar-section rar-race-section rar-public-section"<?php echo $public_race ? '' : ' style="display: none;"'; ?>>
             <input type="hidden" id="rotationSequence" value="<?php echo esc_attr( $public_race->rotation_sequence ?? '' ); ?>">
 
             <div class="rar-race-title-row">
                 <h2 id="activeRaceName"><?php echo $public_race ? esc_html( $public_race->race_name ) : ''; ?></h2>
+                <div id="raceEndCountdown" class="rar-race-end-countdown">--:--:--</div>
                 <div class="rar-race-title-actions">
                     <div id="rarCurrentClock" class="rar-current-clock">--:--:--</div>
                 </div>
             </div>
 
+            <div class="rar-race-main-column">
             <div class="rar-card rar-card-switch">
                 <h3>Fahrerwechsel</h3>
                 <div class="rar-switch-layout">
@@ -32,11 +34,6 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
                         <div id="nextSwitchTimePreview" class="rar-switch-time-preview">Keine Prognose verfügbar</div>
                     </div>
                 </div>
-            </div>
-
-            <div class="rar-card rar-card-forecast">
-                <h3>Wechsel-Prognose</h3>
-                <div id="swapForecast" class="rar-forecast-list"><p>Prognose wird geladen...</p></div>
             </div>
 
             <div class="rar-card rar-card-drivers">
@@ -85,6 +82,14 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
                     <?php endif; ?>
                 </div>
             </details>
+            </div>
+
+            <div class="rar-race-side-column">
+            <div class="rar-card rar-card-forecast">
+                <h3>Wechsel-Prognose</h3>
+                <div id="swapForecast" class="rar-forecast-list"><p>Prognose wird geladen...</p></div>
+            </div>
+            </div>
         </div>
 
         <div id="publicRaceEmpty" class="rar-card rar-public-empty"<?php echo $public_race ? ' style="display: none;"' : ''; ?>>

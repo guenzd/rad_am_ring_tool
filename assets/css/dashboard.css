@@ -58,8 +58,8 @@
     --rar-driver-order-width: 30px;
     --rar-driver-name-width: 180px;
     --rar-driver-name-input-width: 170px;
-    --rar-driver-plan-input-width: 56px;
-    --rar-driver-stats-columns: minmax(56px, 0.65fr) minmax(52px, 0.58fr) minmax(64px, 0.68fr) minmax(70px, 0.74fr) minmax(116px, 1.35fr);
+    --rar-driver-plan-input-width: 100%;
+    --rar-driver-stats-columns: minmax(56px, 0.6fr) minmax(52px, 0.54fr) minmax(82px, 0.82fr) minmax(70px, 0.74fr) minmax(116px, 1.35fr);
 }
 
 #wpbody-content {
@@ -179,10 +179,31 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
     gap: 18px;
 }
 
+.rar-race-section {
+    grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+    align-items: start;
+}
+
+.rar-race-main-column,
+.rar-race-side-column {
+    display: grid;
+    gap: 18px;
+    align-content: start;
+    min-width: 0;
+}
+
+.rar-race-main-column {
+    grid-column: 1;
+}
+
+.rar-race-side-column {
+    grid-column: 2;
+}
+
 .rar-race-title-row {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 12px;
     align-items: stretch;
 }
@@ -205,6 +226,23 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
     font-weight: 800;
     line-height: 1.15;
     font-variant-numeric: tabular-nums;
+}
+
+.rar-race-end-countdown {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    min-height: 34px;
+    min-width: 0;
+    padding: 0 2px 7px;
+    color: var(--rar-heading);
+    border-bottom: 3px solid var(--rar-primary);
+    font-family: Consolas, Monaco, monospace;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .rar-readonly-badge {
@@ -298,8 +336,14 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
 }
 
 .rar-card-switch {
+    align-self: start;
+    padding: 16px 18px;
     border-top-color: var(--rar-border-strong);
     background: var(--rar-surface);
+}
+
+.rar-card-switch h3 {
+    margin-bottom: 12px;
 }
 
 .rar-card-drivers {
@@ -309,7 +353,7 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
 .rar-switch-layout {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 10px;
     align-items: stretch;
 }
 
@@ -329,6 +373,36 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 12px;
     align-items: stretch;
+}
+
+.rar-create-race-card {
+    grid-column: 1 / -1;
+}
+
+.rar-create-race-form {
+    grid-template-columns: minmax(200px, 1fr) minmax(220px, 0.72fr) minmax(220px, 0.72fr);
+    gap: 14px 18px;
+    align-items: start;
+}
+
+.rar-create-race-form .rar-field-time {
+    max-width: 280px;
+}
+
+.rar-create-race-form input[type="datetime-local"].rar-input {
+    min-height: 42px;
+    padding: 8px 10px;
+    font-size: 15px;
+    line-height: 1.2;
+}
+
+.rar-create-race-form .rar-field-drivers {
+    grid-row: span 2;
+}
+
+.rar-create-race-form #createRaceBtn {
+    align-self: end;
+    max-width: 210px;
 }
 
 .rar-field {
@@ -376,6 +450,9 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
 }
 
 .rar-input:focus {
+    color: var(--rar-text-bright);
+    -webkit-text-fill-color: var(--rar-text-bright);
+    caret-color: var(--rar-text-bright);
     outline: 3px solid var(--rar-focus-ring);
     border-color: var(--rar-badge-border-current);
     background: var(--rar-control-bg-muted);
@@ -636,6 +713,8 @@ input.rar-input:-webkit-autofill,
 .rar-container input.rar-driver-name-input:focus,
 .rar-container input.rar-driver-plan-time:focus {
     color: var(--rar-text-bright);
+    -webkit-text-fill-color: var(--rar-text-bright);
+    caret-color: var(--rar-text-bright);
     background: var(--rar-control-bg-focus);
     border-color: var(--rar-primary);
     outline-color: var(--rar-focus-ring);
@@ -685,22 +764,25 @@ input.rar-input:-webkit-autofill,
 
 .rar-driver-plan-field {
     display: grid;
+    align-content: start;
     gap: 4px;
     margin: 0;
 }
 
 .rar-container input.rar-driver-plan-time {
     width: var(--rar-driver-plan-input-width);
-    max-width: var(--rar-driver-plan-input-width);
+    max-width: 100%;
     min-width: 0;
-    height: 28px;
-    padding: 3px 6px;
+    height: 30px;
+    padding: 4px 7px;
     color: var(--rar-heading);
     background: var(--rar-control-bg);
     background-color: var(--rar-control-bg);
     border: 1px solid var(--rar-control-border);
     font-size: 13px;
     font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
     appearance: none;
     -webkit-appearance: none;
     color-scheme: dark;
@@ -902,16 +984,16 @@ input.rar-input:-webkit-autofill,
 .rar-switch-preview {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .rar-switch-driver {
     display: grid;
-    gap: 5px;
+    gap: 4px;
     min-width: 0;
-    min-height: 82px;
-    padding: 12px;
+    min-height: 64px;
+    padding: 9px 10px;
     background: var(--rar-driver-bg, var(--rar-surface-soft));
     border: 1px solid var(--rar-driver-border, var(--rar-border));
     border-left: 6px solid var(--rar-driver-color, var(--rar-primary));
@@ -932,7 +1014,7 @@ input.rar-input:-webkit-autofill,
     min-width: 0;
     overflow: hidden;
     color: var(--rar-heading);
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 900;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -941,10 +1023,10 @@ input.rar-input:-webkit-autofill,
 .rar-switch-time-preview {
     display: grid;
     grid-template-columns: minmax(150px, 1fr) auto auto;
-    gap: 14px;
+    gap: 10px;
     align-items: center;
     margin-bottom: 0;
-    padding: 14px 16px;
+    padding: 9px 12px;
     color: var(--rar-text-inverse);
     background: var(--rar-panel-dark);
     border-left: 5px solid var(--rar-success);
@@ -952,24 +1034,24 @@ input.rar-input:-webkit-autofill,
 
 .rar-switch-time-preview span {
     color: var(--rar-heading);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 900;
     text-transform: uppercase;
 }
 
 .rar-switch-time-preview strong {
     justify-self: end;
-    font-size: 32px;
+    font-size: 28px;
     line-height: 1;
 }
 
 .rar-switch-time-preview em {
     justify-self: end;
-    padding: 7px 12px;
+    padding: 4px 10px;
     color: var(--rar-text-on-warning);
     background: var(--rar-success);
     font-family: Consolas, Monaco, monospace;
-    font-size: 34px;
+    font-size: 30px;
     font-style: normal;
     font-weight: 900;
 }
@@ -980,15 +1062,15 @@ input.rar-input:-webkit-autofill,
 }
 
 .rar-switch-time {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .rar-switch-time-row {
     display: grid;
-    grid-template-columns: minmax(220px, 460px) auto;
+    grid-template-columns: minmax(220px, 360px) minmax(170px, max-content);
     gap: 10px;
     align-items: end;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .rar-switch-time-row .rar-switch-time {
@@ -996,12 +1078,7 @@ input.rar-input:-webkit-autofill,
 }
 
 .rar-switch-time-row .rar-input {
-    max-width: 460px;
-}
-
-#switchDriverTimeOkBtn {
-    min-width: 58px;
-    padding-inline: 12px;
+    max-width: 360px;
 }
 
 .rar-switch-actions {
@@ -1014,19 +1091,26 @@ input.rar-input:-webkit-autofill,
 #switchDriverBtn {
     width: auto;
     min-width: 230px;
-    min-height: 42px;
-    padding: 10px 16px;
+    min-height: 38px;
+    padding: 8px 14px;
 }
 
+#updateLastSwitchTimeBtn,
 #undoSwitchBtn {
-    min-height: 38px;
+    min-height: 36px;
     margin-top: 0;
-    padding: 9px 14px;
+    padding: 8px 12px;
     color: var(--rar-text-inverse);
     background: var(--rar-neutral-action);
     font-size: 12px;
 }
 
+#updateLastSwitchTimeBtn {
+    min-width: 170px;
+    white-space: nowrap;
+}
+
+#updateLastSwitchTimeBtn:hover,
 #undoSwitchBtn:hover {
     background: var(--rar-neutral-action-hover);
     box-shadow: var(--rar-shadow-strong);
@@ -1063,12 +1147,21 @@ input.rar-input:-webkit-autofill,
         grid-template-columns: 1fr;
     }
 
+    .rar-race-main-column,
+    .rar-race-side-column {
+        grid-column: auto;
+    }
+
     .rar-card-forecast {
         grid-row: auto;
     }
 
     .rar-race-title-row {
         grid-template-columns: 1fr;
+    }
+
+    .rar-race-end-countdown {
+        justify-self: stretch;
     }
 
     .rar-race-title-actions {
@@ -1085,6 +1178,23 @@ input.rar-input:-webkit-autofill,
 
     .rar-form-group {
         grid-template-columns: 1fr;
+    }
+
+    .rar-create-race-card {
+        grid-column: auto;
+    }
+
+    .rar-create-race-form {
+        grid-template-columns: 1fr;
+    }
+
+    .rar-create-race-form .rar-field-time,
+    .rar-create-race-form #createRaceBtn {
+        max-width: 100%;
+    }
+
+    .rar-create-race-form .rar-field-drivers {
+        grid-row: auto;
     }
 
     .rar-driver-card {
@@ -1108,6 +1218,8 @@ input.rar-input:-webkit-autofill,
 
     .rar-forecast-meta {
         justify-items: start;
+        min-width: 0;
+        width: 100%;
     }
 
     .rar-switch-layout,
@@ -1132,6 +1244,7 @@ input.rar-input:-webkit-autofill,
     }
 
     #switchDriverBtn,
+    #updateLastSwitchTimeBtn,
     #undoSwitchBtn {
         width: 100%;
     }

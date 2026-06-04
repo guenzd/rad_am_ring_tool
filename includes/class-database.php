@@ -461,6 +461,33 @@ class RAR_Database {
     }
 
     /**
+     * Update the timestamp of the latest driver switch for a race.
+     */
+    public static function update_last_driver_switch_time( $race_id, $switched_at ) {
+        global $wpdb;
+
+        $switch_id = $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM {$wpdb->prefix}rar_driver_rotations
+             WHERE race_id = %d
+             ORDER BY switched_at DESC, id DESC
+             LIMIT 1",
+            $race_id
+        ) );
+
+        if ( ! $switch_id ) {
+            return false;
+        }
+
+        return (bool) $wpdb->update(
+            "{$wpdb->prefix}rar_driver_rotations",
+            [ 'switched_at' => $switched_at ],
+            [ 'id' => $switch_id ],
+            [ '%s' ],
+            [ '%d' ]
+        );
+    }
+
+    /**
      * Update driver statistics
      */
     private static function update_driver_stats( $driver_id, $race_id ) {

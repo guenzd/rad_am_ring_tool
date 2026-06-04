@@ -13,10 +13,14 @@ jQuery(document).ready(function($) {
     let currentForecastItems = null;
     let queueOperationChain = $.Deferred().resolve().promise();
     let slowForecastUpdatedAt = 0;
+    let lastPublicRefreshAt = 0;
+    let isLoadingRaceData = false;
     let manualSwitchTimeEdited = false;
     let initialAdminAutoLoadAttempted = false;
+    let pendingRaceStart = null;
     const FIRST_SWITCH_LOCK_MINUTES = 15;
     const DEFAULT_FINAL_LAP_OFFSET_SECONDS = 5 * 60;
+    const PUBLIC_RACE_REFRESH_MS = 5000;
 
     // Load all races on startup
     setDefaultRaceTimes();
@@ -255,6 +259,12 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        if (isLoadingRaceData) {
+            return;
+        }
+
+        isLoadingRaceData = true;
+
         $.ajax({
             url: rarData.ajaxUrl,
             type: 'POST',
@@ -264,8 +274,24 @@ jQuery(document).ready(function($) {
                 nonce: rarData.nonce,
             },
             success: function(response) {
+                isLoadingRaceData = false;
+
                 if (response.success) {
                     raceData = response.data;
+                    invalidateForecastData();
+
+                    if (
+                        pendingRaceStart &&
+                        raceData.race &&
+                        parseInt(raceData.race.id, 10) === parseInt(pendingRaceStart.raceId, 10)
+                    ) {
+                        if (raceData.race.start_time === pendingRaceStart.startTime) {
+                            pendingRaceStart = null;
+                        } else if (parseWpDate(raceData.race.start_time) > parseWpDate(pendingRaceStart.startTime)) {
+                            raceData.race.start_time = pendingRaceStart.startTime;
+                        }
+                    }
+
                     $('#raceSelect').val(currentRaceId);
                     updateDeleteRaceButton();
                     $('#activeRaceName').text(raceData.race.race_name);
@@ -289,8 +315,17 @@ jQuery(document).ready(function($) {
                 } else {
                     showMessage('Fehler beim Laden des Rennens: ' + response.data, 'error');
                 }
+            },
+            error: function() {
+                isLoadingRaceData = false;
+                showMessage('AJAX-Fehler', 'error');
             }
         });
+    }
+
+    function invalidateForecastData() {
+        currentForecastItems = null;
+        slowForecastUpdatedAt = 0;
     }
 
     /**
@@ -321,6 +356,9 @@ jQuery(document).ready(function($) {
 
         // Convert minutes to seconds
         let avgLapTimeSeconds = avgLapTime * 60;
+
+        $('#switchDriverBtn').prop('disabled', true).text('Aktualisiere...');
+        invalidateForecastData();
 
         $.ajax({
             url: rarData.ajaxUrl,
@@ -377,6 +415,18 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
+                    if (raceData && raceData.race && response.data && response.data.start_time) {
+                        pendingRaceStart = {
+                            raceId: currentRaceId,
+                            startTime: response.data.start_time,
+                        };
+                        raceData.race.start_time = response.data.start_time;
+                        updateManualTimeInputs();
+                        updateSwapForecast();
+                        updateNextSwitchPreview();
+                        updateSwitchLog();
+                    }
+
                     showMessage(isCorrection ? 'Startzeit korrigiert!' : 'Rennen gestartet!', 'success');
                     loadRaceData();
                 } else {
@@ -456,18 +506,6 @@ jQuery(document).ready(function($) {
         quickRemoveQueueStint(parseInt($(this).data('index'), 10));
     });
 
-    /**
-     * Switch driver
-     */
-    $('#switchDriverTimeOkBtn').on('click', function() {
-        if (isRaceStartAdjustmentMode()) {
-            saveRaceStartTime();
-            return;
-        }
-
-        $('#switchDriverBtn').trigger('click');
-    });
-
     $('#switchDriverBtn').on('click', function() {
         if (!ensureCanEdit()) {
             return;
@@ -525,10 +563,16 @@ jQuery(document).ready(function($) {
                     let toDriver = response.data.to || switchDrivers.to;
 
                     showMessage(getSwitchActionLabel({ from: fromDriver, to: toDriver }) + ': ' + fromDriver.driver_name + ' zu ' + toDriver.driver_name, 'success');
+                    invalidateForecastData();
                     loadRaceData();
                 } else {
                     showMessage('Fehler beim Wechsel des Fahrers: ' + response.data, 'error');
+                    updateNextSwitchPreview();
                 }
+            },
+            error: function() {
+                showMessage('AJAX-Fehler', 'error');
+                updateNextSwitchPreview();
             }
         });
     });
@@ -539,7 +583,9 @@ jQuery(document).ready(function($) {
         }
 
         if (isRaceStartAdjustmentMode()) {
-            saveRaceStartTime();
+            if (isRaceStartTimeCorrection()) {
+                saveRaceStartTime();
+            }
             return;
         }
 
@@ -566,6 +612,50 @@ jQuery(document).ready(function($) {
                     loadRaceData();
                 } else {
                     showMessage('Fehler beim Rückgängig machen: ' + response.data, 'error');
+                }
+            },
+            error: function() {
+                showMessage('AJAX-Fehler', 'error');
+            }
+        });
+    });
+
+    $('#updateLastSwitchTimeBtn').on('click', function() {
+        if (!ensureCanEdit()) {
+            return;
+        }
+
+        if (!currentRaceId) {
+            showMessage('Bitte wählen Sie zuerst ein Rennen', 'error');
+            return;
+        }
+
+        if (hasNoRecordedSwitches()) {
+            showMessage('Noch kein Fahrerwechsel vorhanden', 'error');
+            return;
+        }
+
+        if (!manualSwitchTimeEdited) {
+            $('#manualSwitchTime').focus();
+            showMessage('Wechselzeit im Feld ändern, dann letzten Wechsel korrigieren klicken', 'error');
+            return;
+        }
+
+        $.ajax({
+            url: rarData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'rar_update_last_driver_switch_time',
+                race_id: currentRaceId,
+                switched_at: getManualSwitchTimeMysqlValue(),
+                nonce: rarData.nonce,
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage('Letzter Wechsel korrigiert!', 'success');
+                    loadRaceData();
+                } else {
+                    showMessage('Fehler beim Korrigieren des Wechsels: ' + response.data, 'error');
                 }
             },
             error: function() {
@@ -666,17 +756,30 @@ jQuery(document).ready(function($) {
     }
 
     function updateManualTimeInputs() {
-        let startTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
+        let defaultTime = getDefaultManualSwitchTime();
 
-        if (isRaceStartAdjustmentMode() && startTime) {
-            $('#manualSwitchTime').val(formatDateTimeLocal(startTime));
-        } else {
-            $('#manualSwitchTime').val(formatDateTimeLocal(getCurrentDate()));
-        }
+        $('#manualSwitchTime').val(formatDateTimeLocal(defaultTime));
         manualSwitchTimeEdited = false;
 
         updateSwitchTimeControls();
         applyReadOnlyState();
+    }
+
+    function getDefaultManualSwitchTime() {
+        let startTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
+        let rotations = getOrderedRotations();
+        let latestRotation = rotations.length ? rotations[rotations.length - 1] : null;
+        let latestSwitchTime = latestRotation ? parseWpDate(latestRotation.switched_at) : null;
+
+        if (latestSwitchTime) {
+            return latestSwitchTime;
+        }
+
+        if (startTime) {
+            return startTime;
+        }
+
+        return getCurrentDate();
     }
 
     function getManualSwitchTimeMysqlValue() {
@@ -697,12 +800,12 @@ jQuery(document).ready(function($) {
 
     function updateSwitchTimeControls() {
         let $switchButton = $('#switchDriverBtn');
-        let $okButton = $('#switchDriverTimeOkBtn');
         let $label = $('#manualSwitchTimeLabel');
+        let $updateLastSwitchButton = $('#updateLastSwitchTimeBtn');
 
         if (!raceData || !raceData.race) {
             $switchButton.prop('disabled', true).text('Fahrerwechsel');
-            $okButton.prop('disabled', true);
+            $updateLastSwitchButton.prop('disabled', true);
             $label.text('Wechselzeit nachträglich korrigieren');
             return;
         }
@@ -713,7 +816,7 @@ jQuery(document).ready(function($) {
 
         if (startAdjustmentMode) {
             $label.text('Rennstart anpassen');
-            $okButton.prop('disabled', false);
+            $updateLastSwitchButton.prop('disabled', true);
             $('#undoSwitchBtn').prop('disabled', false).text('Rennstart korrigieren');
 
             if (isBeforeRaceStart()) {
@@ -730,15 +833,22 @@ jQuery(document).ready(function($) {
         }
 
         $label.text('Wechselzeit nachträglich korrigieren');
-        $okButton.prop('disabled', false);
         $('#undoSwitchBtn').text('Letzten Fahrerwechsel rückgängig');
+        $updateLastSwitchButton.prop('disabled', hasNoRecordedSwitches());
+        let switchDrivers = getNextSwitchDrivers();
 
-        if (hasNoRecordedSwitches() && isManualSwitchTimeRaceStartValue()) {
-            $('#manualSwitchTime').val(formatDateTimeLocal(getCurrentDate()));
-            manualSwitchTimeEdited = false;
+        if (switchDrivers) {
+            $switchButton
+                .prop('disabled', false)
+                .text(getSwitchActionLabel(switchDrivers, getNextSwitchPrognosis(switchDrivers)));
         }
 
         applyReadOnlyState();
+    }
+
+    function promptRaceStartCorrection() {
+        $('#manualSwitchTime').focus();
+        showMessage('Startzeit im Feld ändern, dann Rennstart korrigieren klicken', 'error');
     }
 
     function isRaceStartAdjustmentMode() {
@@ -777,10 +887,6 @@ jQuery(document).ready(function($) {
     }
 
     function getSwitchDriverRequestTimeValue() {
-        if (manualSwitchTimeEdited && !(hasNoRecordedSwitches() && isManualSwitchTimeRaceStartValue())) {
-            return getManualSwitchTimeMysqlValue();
-        }
-
         return formatMysqlDateTimeLocal(getCurrentDate());
     }
 
@@ -1318,7 +1424,7 @@ jQuery(document).ready(function($) {
 
         $(
             '#createRaceBtn, #addDriverBtn, #switchDriverBtn, ' +
-            '#switchDriverTimeOkBtn, #undoSwitchBtn, #endRaceBtn, #deleteRaceBtn, ' +
+            '#updateLastSwitchTimeBtn, #undoSwitchBtn, #endRaceBtn, #deleteRaceBtn, ' +
             '.rar-forecast-remove'
         ).prop('disabled', true);
 
@@ -1485,9 +1591,9 @@ jQuery(document).ready(function($) {
         let lapNumber = item.sourceLapIndex !== null && item.sourceLapIndex !== undefined
             ? item.sourceLapIndex + 1
             : null;
-        let finishLabel = showBuffer ? getForecastFinishLabel() : '';
-        let buffer = showBuffer ? getForecastBuffer(item.switchTime || item.time) : null;
-
+        let finishCrossingTime = showBuffer ? getForecastFinishCrossingTime(item) : null;
+        let finishLabel = finishCrossingTime ? getForecastFinishLabel(finishCrossingTime) : '';
+        let buffer = finishCrossingTime ? getForecastBuffer(finishCrossingTime) : null;
         return '<div class="' + classes + '"' + attrs + '>' +
             '<div class="rar-forecast-main">' +
                 '<span class="rar-forecast-order">#' + item.driver.driver_order + '</span>' +
@@ -1505,24 +1611,42 @@ jQuery(document).ready(function($) {
             '</div>';
     }
 
-    function getForecastFinishLabel() {
+    function getRaceEndCountdownLabel() {
         let plannedEndTime = parseWpDate(raceData && raceData.race ? raceData.race.planned_end_time : null);
 
         if (!plannedEndTime) {
             return '';
         }
 
-        return 'Ziel ' + formatTime(plannedEndTime);
+        return formatCountdown(plannedEndTime);
     }
 
-    function getForecastBuffer(lastForecastTime) {
-        let plannedEndTime = getEffectivePlannedEndTime(raceData && raceData.race ? raceData.race : null);
+    function getForecastFinishCrossingTime(item) {
+        let switchTime = item && (item.switchTime || item.time);
 
-        if (!plannedEndTime || !lastForecastTime) {
+        if (!switchTime) {
             return null;
         }
 
-        let bufferMinutes = Math.floor((plannedEndTime.getTime() - lastForecastTime.getTime()) / 60000);
+        return new Date(switchTime.getTime() - getFinalLapOffsetSeconds(raceData && raceData.race ? raceData.race : null) * 1000);
+    }
+
+    function getForecastFinishLabel(finishCrossingTime) {
+        if (!finishCrossingTime) {
+            return '';
+        }
+
+        return 'Ziel ' + formatTime(finishCrossingTime);
+    }
+
+    function getForecastBuffer(finishCrossingTime) {
+        let plannedEndTime = parseWpDate(raceData && raceData.race ? raceData.race.planned_end_time : null);
+
+        if (!plannedEndTime || !finishCrossingTime) {
+            return null;
+        }
+
+        let bufferMinutes = Math.floor((plannedEndTime.getTime() - finishCrossingTime.getTime()) / 60000);
 
         return {
             className: getForecastBufferClass(bufferMinutes),
@@ -1759,6 +1883,12 @@ jQuery(document).ready(function($) {
             updateNextSwitchPreview();
             updateSwitchTimeControls();
 
+            if (publicView && Date.now() - lastPublicRefreshAt >= PUBLIC_RACE_REFRESH_MS) {
+                lastPublicRefreshAt = Date.now();
+                loadRaceData();
+                return;
+            }
+
             if (Date.now() - slowForecastUpdatedAt >= 60000) {
                 slowForecastUpdatedAt = Date.now();
                 updateDriversList();
@@ -1776,6 +1906,7 @@ jQuery(document).ready(function($) {
 
     function updateCurrentClock() {
         $('#rarCurrentClock').text(formatTime(getCurrentDate()));
+        $('#raceEndCountdown').text(getRaceEndCountdownLabel() || '--:--:--');
     }
 
     function parseWpDate(value) {

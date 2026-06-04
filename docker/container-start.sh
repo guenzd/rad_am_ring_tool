@@ -81,24 +81,25 @@ printf '\n'
 DB_HOST="$(container_ipv4 "$DB_CONTAINER")"
 
 if container_exists "$WP_CONTAINER"; then
-  container start "$WP_CONTAINER" >/dev/null 2>&1 || true
-else
-  container run \
-    --name "$WP_CONTAINER" \
-    --detach \
-    --network "$NETWORK" \
-    --publish "$WORDPRESS_PORT:80" \
-    --env "WORDPRESS_DB_HOST=$DB_HOST:3306" \
-    --env "WORDPRESS_DB_NAME=$WORDPRESS_DB_NAME" \
-    --env "WORDPRESS_DB_USER=$WORDPRESS_DB_USER" \
-    --env "WORDPRESS_DB_PASSWORD=$WORDPRESS_DB_PASSWORD" \
-    --env "WORDPRESS_DEBUG=${WORDPRESS_DEBUG:-1}" \
-    --env "WORDPRESS_CONFIG_EXTRA=define( 'WP_DEBUG_LOG', true );
+  container stop "$WP_CONTAINER" >/dev/null 2>&1 || true
+  container delete "$WP_CONTAINER" >/dev/null 2>&1 || true
+fi
+
+container run \
+  --name "$WP_CONTAINER" \
+  --detach \
+  --network "$NETWORK" \
+  --publish "$WORDPRESS_PORT:80" \
+  --env "WORDPRESS_DB_HOST=$DB_HOST:3306" \
+  --env "WORDPRESS_DB_NAME=$WORDPRESS_DB_NAME" \
+  --env "WORDPRESS_DB_USER=$WORDPRESS_DB_USER" \
+  --env "WORDPRESS_DB_PASSWORD=$WORDPRESS_DB_PASSWORD" \
+  --env "WORDPRESS_DEBUG=${WORDPRESS_DEBUG:-1}" \
+  --env "WORDPRESS_CONFIG_EXTRA=define( 'WP_DEBUG_LOG', true );
 define( 'WP_DEBUG_DISPLAY', false );
 define( 'SCRIPT_DEBUG', true );" \
-    --volume "$WP_VOLUME:/var/www/html" \
-    --volume "$PROJECT_ROOT:/var/www/html/wp-content/plugins/rad-am-ring-plugin" \
-    "$WORDPRESS_IMAGE"
-fi
+  --volume "$WP_VOLUME:/var/www/html" \
+  --volume "$PROJECT_ROOT:/var/www/html/wp-content/plugins/rad-am-ring-plugin" \
+  "$WORDPRESS_IMAGE"
 
 printf '%s\n' "WordPress container is starting: http://localhost:$WORDPRESS_PORT"

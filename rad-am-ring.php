@@ -146,6 +146,7 @@ add_action( 'wp_ajax_rar_save_rotation_sequence', 'rar_ajax_save_rotation_sequen
 add_action( 'wp_ajax_rar_mutate_rotation_queue', 'rar_ajax_mutate_rotation_queue' );
 add_action( 'wp_ajax_rar_start_race', 'rar_ajax_start_race' );
 add_action( 'wp_ajax_rar_undo_driver_switch', 'rar_ajax_undo_driver_switch' );
+add_action( 'wp_ajax_rar_update_last_driver_switch_time', 'rar_ajax_update_last_driver_switch_time' );
 add_action( 'wp_ajax_rar_export_race', 'rar_ajax_export_race' );
 add_action( 'wp_ajax_rar_delete_race', 'rar_ajax_delete_race' );
 add_action( 'wp_ajax_nopriv_rar_get_race_data', 'rar_ajax_get_race_data' );
@@ -669,6 +670,59 @@ function rar_ajax_undo_driver_switch() {
     }
 
     wp_send_json_success( [ 'undone' => true ] );
+}
+
+function rar_ajax_update_last_driver_switch_time() {
+    if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rar_nonce' ) ) {
+        wp_send_json_error( 'Sicherheitsüberprüfung fehlgeschlagen' );
+    }
+
+    rar_require_edit_access();
+
+    $race_id = intval( $_POST['race_id'] ?? 0 );
+    $switched_at_input = sanitize_text_field( wp_unslash( $_POST['switched_at'] ?? '' ) );
+
+    if ( ! $race_id || ! $switched_at_input ) {
+        wp_send_json_error( 'Ungültige Daten' );
+    }
+
+    $switched_at_datetime = rar_parse_local_datetime( $switched_at_input );
+    if ( ! $switched_at_datetime ) {
+        wp_send_json_error( 'Ungültige Wechselzeit' );
+    }
+
+    $data = RAR_Database::get_race_data( $race_id );
+    if ( empty( $data['race'] ) ) {
+        wp_send_json_error( 'Rennen nicht gefunden' );
+    }
+
+    if ( empty( $data['rotations'] ) ) {
+        wp_send_json_error( 'Noch kein Fahrerwechsel vorhanden' );
+    }
+
+    $switched_at = $switched_at_datetime->format( 'Y-m-d H:i:s' );
+    $rotations = RAR_Race_Logic::get_ordered_rotations( $data['rotations'] );
+
+    if ( 1 === count( $rotations ) ) {
+        $latest_switch = $rotations[0];
+        $driver = null;
+        foreach ( $data['drivers'] as $candidate ) {
+            if ( intval( $candidate->id ) === intval( $latest_switch->from_driver_id ) ) {
+                $driver = $candidate;
+                break;
+            }
+        }
+
+        if ( ! rar_is_first_switch_due( $data, $driver, $switched_at ) ) {
+            wp_send_json_error( 'Der erste Fahrer ist noch auf der Strecke' );
+        }
+    }
+
+    if ( ! RAR_Database::update_last_driver_switch_time( $race_id, $switched_at ) ) {
+        wp_send_json_error( 'Kein Fahrerwechsel aktualisiert' );
+    }
+
+    wp_send_json_success( [ 'switched_at' => $switched_at ] );
 }
 
 function rar_ajax_export_race() {

@@ -74,8 +74,14 @@ function createElement(selector, length = 1) {
             this.textValue = '';
             return this;
         },
-        show() { return this; },
-        hide() { return this; },
+        show() {
+            this.props.hidden = false;
+            return this;
+        },
+        hide() {
+            this.props.hidden = true;
+            return this;
+        },
         addClass() { return this; },
         removeClass() { return this; },
         toggle() { return this; },
@@ -97,6 +103,10 @@ function createElement(selector, length = 1) {
                 callback.call(this);
             }
 
+            return this;
+        },
+        focus() {
+            this.props.focused = true;
             return this;
         },
         remove() { return this; },
@@ -361,7 +371,7 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
 
         if (options.data.action === 'rar_start_race') {
             raceData.race.start_time = options.data.start_time || toMysqlDate(new Date(now));
-            const response = { success: true, data: {} };
+            const response = { success: true, data: { start_time: raceData.race.start_time } };
             options.success(response);
             return ajaxResult(response);
         }
@@ -393,6 +403,18 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
         if (options.data.action === 'rar_undo_driver_switch') {
             raceData.rotations.pop();
             const response = { success: true, data: {} };
+            options.success(response);
+            return ajaxResult(response);
+        }
+
+        if (options.data.action === 'rar_update_last_driver_switch_time') {
+            const latestRotation = raceData.rotations[raceData.rotations.length - 1];
+
+            if (latestRotation) {
+                latestRotation.switched_at = options.data.switched_at;
+            }
+
+            const response = { success: true, data: { switched_at: options.data.switched_at } };
             options.success(response);
             return ajaxResult(response);
         }
@@ -475,11 +497,6 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
         harness.elements.get('#switchDriverBtn').trigger('click');
     }
 
-    function clickOkAt(value) {
-        setNow(value);
-        harness.elements.get('#switchDriverTimeOkBtn').trigger('click');
-    }
-
     function clickUndo() {
         harness.elements.get('#undoSwitchBtn').trigger('click');
     }
@@ -559,7 +576,6 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
         clickLoadRace,
         setNow,
         clickSwitchAt,
-        clickOkAt,
         clickUndo,
         clickEndAt,
         clickDelete,
@@ -677,7 +693,8 @@ test('manual race start click keeps first driver visible and start correction av
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
 
         harness.elements.get('#manualSwitchTime').val('2026-05-16T15:15:00');
-        harness.elements.get('#switchDriverTimeOkBtn').trigger('click');
+        harness.elements.get('#manualSwitchTime').trigger('input');
+        harness.elements.get('#switchDriverBtn').trigger('click');
 
         assert.equal(startRaceRequests, 1);
         assert.deepEqual(startRacePayloads, ['2026-05-16 15:15:00']);
@@ -756,8 +773,106 @@ test('start now button starts race without creating a driver switch', () => {
         assert.deepEqual(context.raceData.rotations, []);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
+        assert.equal(context.harness.elements.get('#undoSwitchBtn').prop('disabled'), false);
+
+        const startRequestsBeforeCorrectionClick = context.ajaxRequests.filter((request) => request.action === 'rar_start_race').length;
+        context.harness.elements.get('#undoSwitchBtn').trigger('click');
+        assert.equal(
+            context.ajaxRequests.filter((request) => request.action === 'rar_start_race').length,
+            startRequestsBeforeCorrectionClick
+        );
     } finally {
         context.restore();
+    }
+});
+
+test('start now keeps race running when immediate reload still returns stale future start', () => {
+    const fixedNow = new Date('2026-05-18T21:06:00').getTime();
+    const originalNow = Date.now;
+    const originalSetInterval = global.setInterval;
+    const originalClearInterval = global.clearInterval;
+    const originalWindow = global.window;
+    const originalDocument = global.document;
+    const originalJquery = global.jQuery;
+    const originalDollar = global.$;
+    const originalRarData = global.rarData;
+    const originalLogic = global.RARRaceLogic;
+
+    Date.now = () => fixedNow;
+    global.setInterval = () => 1;
+    global.clearInterval = () => {};
+    global.document = {};
+
+    const harness = createJqueryHarness();
+    const { $ } = harness;
+    const staleRaceData = createShortRaceData({
+        id: 43,
+        startTime: '2026-05-18 21:10:00',
+        firstLapExtraTime: 180,
+        lapTime: 2700,
+    });
+
+    function ajaxReturn(response) {
+        return {
+            then(resolve) {
+                if (resolve) {
+                    resolve(response);
+                }
+
+                return this;
+            },
+        };
+    }
+
+    $.ajax = function(options) {
+        if (options.data.action === 'rar_get_all_races') {
+            options.success({ success: true, data: { races: [staleRaceData.race] } });
+        }
+
+        if (options.data.action === 'rar_get_race_data') {
+            options.success({ success: true, data: staleRaceData });
+        }
+
+        if (options.data.action === 'rar_start_race') {
+            options.success({ success: true, data: { start_time: '2026-05-18 21:06:00' } });
+        }
+
+        return ajaxReturn({ success: true, data: {} });
+    };
+
+    global.window = {
+        rarData: {
+            ajaxUrl: '/wp-admin/admin-ajax.php',
+            nonce: 'nonce',
+            canEdit: true,
+        },
+    };
+    global.rarData = global.window.rarData;
+    global.jQuery = $;
+    global.$ = $;
+    global.RARRaceLogic = logic;
+
+    delete require.cache[require.resolve('../assets/js/dashboard.js')];
+
+    try {
+        require('../assets/js/dashboard.js');
+
+        assert.equal(harness.elements.get('#switchDriverBtn').text(), 'Rennen jetzt starten');
+        harness.elements.get('#switchDriverBtn').trigger('click');
+
+        assert.equal(harness.elements.get('#switchDriverBtn').text(), 'Erste Runde läuft');
+        assert.match(harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+        assert.match(harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
+    } finally {
+        Date.now = originalNow;
+        global.setInterval = originalSetInterval;
+        global.clearInterval = originalClearInterval;
+        global.window = originalWindow;
+        global.document = originalDocument;
+        global.jQuery = originalJquery;
+        global.$ = originalDollar;
+        global.rarData = originalRarData;
+        global.RARRaceLogic = originalLogic;
     }
 });
 
@@ -802,6 +917,75 @@ test('first driver switch is allowed from 15 minutes after race start', () => {
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}@${rotation.switched_at}`), [
             'Daniel->Moritz@2026-05-16 10:15:00',
         ]);
+    } finally {
+        context.restore();
+    }
+});
+
+test('manual switch time defaults to latest real switch after refresh', () => {
+    const raceData = createShortRaceData({
+        id: 44,
+        plannedEndTime: '2026-05-16 11:00:00',
+    });
+
+    raceData.rotations = [
+        {
+            id: 1,
+            from_driver_id: 1,
+            to_driver_id: 2,
+            from_driver: 'Daniel',
+            to_driver: 'Moritz',
+            switched_at: '2026-05-16 10:15:00',
+        },
+    ];
+
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:18:00');
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '2026-05-16T10:15:00');
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
+    } finally {
+        context.restore();
+    }
+});
+
+test('manual switch time defaults to race start before first real switch', () => {
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 46,
+            startTime: '2026-05-16 10:00:00',
+            plannedEndTime: '2026-05-16 11:00:00',
+        }),
+        '2026-05-16T10:08:00'
+    );
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '2026-05-16T10:00:00');
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
+    } finally {
+        context.restore();
+    }
+});
+
+test('manual switch time stays on race start when first switch is due but not recorded', () => {
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 47,
+            startTime: '2026-05-16 10:00:00',
+            plannedEndTime: '2026-05-16 11:00:00',
+        }),
+        '2026-05-16T10:40:00'
+    );
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '2026-05-16T10:00:00');
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
     } finally {
         context.restore();
     }
@@ -858,14 +1042,25 @@ test('first driver switch after 40 minutes ignores stale race start field withou
 });
 
 test('race after planned end still forecasts from a corrected switch before end', () => {
-    const context = createDashboardClickTest(createShortRaceData({ id: 47 }), '2026-05-16T10:40:00');
+    const raceData = createShortRaceData({ id: 47 });
+    raceData.rotations = [
+        {
+            id: 1,
+            from_driver_id: 1,
+            to_driver_id: 2,
+            from_driver: 'Daniel',
+            to_driver: 'Moritz',
+            switched_at: '2026-05-16 10:40:00',
+        },
+    ];
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:40:00');
 
     try {
         context.loadDashboard();
 
         context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:15:00');
         context.harness.elements.get('#manualSwitchTime').trigger('input');
-        context.harness.elements.get('#switchDriverBtn').trigger('click');
+        context.harness.elements.get('#updateLastSwitchTimeBtn').trigger('click');
 
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}@${rotation.switched_at}`), [
             'Daniel->Moritz@2026-05-16 10:15:00',
@@ -971,6 +1166,16 @@ test('accelerated click test can simulate a complete short race', () => {
             });
         }
 
+        if (options.data.action === 'rar_update_last_driver_switch_time') {
+            const latestRotation = raceData.rotations[raceData.rotations.length - 1];
+
+            if (latestRotation) {
+                latestRotation.switched_at = options.data.switched_at;
+            }
+
+            options.success({ success: true, data: { switched_at: options.data.switched_at } });
+        }
+
         if (options.data.action === 'rar_end_race') {
             raceData.race.end_time = options.data.end_time || toMysqlDate(new Date(now));
             options.success({ success: true, data: {} });
@@ -1045,7 +1250,7 @@ test('accelerated click test can simulate a complete short race', () => {
         assert.match(harness.elements.get('#swapForecast').html(), /Zielrunde 10:30:00/);
 
         setNow('2026-05-16T10:36:00');
-        harness.elements.get('#switchDriverTimeOkBtn').trigger('click');
+        harness.elements.get('#switchDriverBtn').trigger('click');
         assert.equal(raceData.rotations.length, 4);
         assert.equal(raceData.race.end_time, '2026-05-16 10:36:00');
         assert.deepEqual(raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
@@ -1068,7 +1273,7 @@ test('accelerated click test can simulate a complete short race', () => {
     }
 });
 
-test('accelerated click test records manually corrected switch times', () => {
+test('accelerated click test edits the latest switch time without creating a switch', () => {
     const context = createDashboardClickTest(
         createShortRaceData({
             id: 25,
@@ -1086,16 +1291,15 @@ test('accelerated click test records manually corrected switch times', () => {
         context.setNow('2026-05-16T10:20:00');
         context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:19:37');
         context.harness.elements.get('#manualSwitchTime').trigger('input');
-        context.harness.elements.get('#switchDriverTimeOkBtn').trigger('click');
+        context.harness.elements.get('#updateLastSwitchTimeBtn').trigger('click');
 
-        assert.equal(context.raceData.rotations.length, 2);
+        assert.equal(context.raceData.rotations.length, 1);
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Moritz',
-            'Moritz->Heiko',
         ]);
-        assert.equal(context.raceData.rotations[1].switched_at, '2026-05-16 10:19:37');
+        assert.equal(context.raceData.rotations[0].switched_at, '2026-05-16 10:19:37');
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#3 Heiko/);
-        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#4 Stefan/);
     } finally {
         context.restore();
     }
@@ -1148,7 +1352,7 @@ test('final stint button ends the race instead of switching drivers', () => {
     }
 });
 
-test('final stint race end can be corrected through the switch time input', () => {
+test('final stint race end uses the action time, not the latest-switch correction field', () => {
     const raceData = createShortRaceData({
         id: 261,
         plannedEndTime: '2026-05-16 10:25:00',
@@ -1187,10 +1391,10 @@ test('final stint race end can be corrected through the switch time input', () =
 
         context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:29:37');
         context.harness.elements.get('#manualSwitchTime').trigger('input');
-        context.harness.elements.get('#switchDriverTimeOkBtn').trigger('click');
+        context.harness.elements.get('#switchDriverBtn').trigger('click');
 
         assert.equal(context.raceData.rotations.length, 3);
-        assert.equal(context.raceData.race.end_time, '2026-05-16 10:29:37');
+        assert.equal(context.raceData.race.end_time, '2026-05-16 10:31:00');
     } finally {
         context.restore();
     }
@@ -1387,6 +1591,7 @@ test('advanced start correction keeps second precision before first real switch'
 
         assert.equal(context.harness.elements.get('#undoSwitchBtn').text(), 'Rennstart korrigieren');
         context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:00:37');
+        context.harness.elements.get('#manualSwitchTime').trigger('input');
         context.clickUndo();
 
         assert.equal(context.raceData.race.start_time, '2026-05-16 10:00:37');
@@ -1606,6 +1811,8 @@ test('forecast shows the final stint after the buffered penultimate driver', () 
         assert.match(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Moritz/);
         assert.match(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Daniel/);
         assert.match(context.harness.elements.get('#swapForecast').html(), /Zielrunde 10:35:42 PM/);
+        assert.match(context.harness.elements.get('#swapForecast').html(), /Ziel 09:57:42 PM/);
+        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /Ziel 10:19:00 PM/);
         assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /Ziel 10:35:42 PM<\/span><button/);
         assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Heiko/);
     } finally {
