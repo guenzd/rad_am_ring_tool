@@ -6,6 +6,6 @@
     "test": "npm run test:js && npm run test:php",
     "test:js": "node --test tests/*.test.js",
     "test:php": "php tests/race-logic-php.test.php",
-    "lint:js": "node --check assets/js/race-logic.js && node --check assets/js/dashboard.js"
+    "lint:js": "node --check plugins/rad-am-ring-plugin/assets/js/race-logic.js && node --check plugins/rad-am-ring-plugin/assets/js/dashboard.js"
   }
 }

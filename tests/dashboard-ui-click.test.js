@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const logic = require('../assets/js/race-logic.js');
+const logic = require('../plugins/rad-am-ring-plugin/assets/js/race-logic.js');
 
 function createElement(selector, length = 1) {
     return {
@@ -545,8 +545,8 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
     }
 
     function loadDashboard() {
-        delete require.cache[require.resolve('../assets/js/dashboard.js')];
-        require('../assets/js/dashboard.js');
+        delete require.cache[require.resolve('../plugins/rad-am-ring-plugin/assets/js/dashboard.js')];
+        require('../plugins/rad-am-ring-plugin/assets/js/dashboard.js');
     }
 
     function clickLoadRace() {
@@ -684,10 +684,10 @@ test('manual race start click keeps first driver visible and start correction av
     global.$ = $;
     global.RARRaceLogic = logic;
 
-    delete require.cache[require.resolve('../assets/js/dashboard.js')];
+    delete require.cache[require.resolve('../plugins/rad-am-ring-plugin/assets/js/dashboard.js')];
 
     try {
-        require('../assets/js/dashboard.js');
+        require('../plugins/rad-am-ring-plugin/assets/js/dashboard.js');
 
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
@@ -852,10 +852,10 @@ test('start now keeps race running when immediate reload still returns stale fut
     global.$ = $;
     global.RARRaceLogic = logic;
 
-    delete require.cache[require.resolve('../assets/js/dashboard.js')];
+    delete require.cache[require.resolve('../plugins/rad-am-ring-plugin/assets/js/dashboard.js')];
 
     try {
-        require('../assets/js/dashboard.js');
+        require('../plugins/rad-am-ring-plugin/assets/js/dashboard.js');
 
         assert.equal(harness.elements.get('#switchDriverBtn').text(), 'Rennen jetzt starten');
         harness.elements.get('#switchDriverBtn').trigger('click');
@@ -1202,10 +1202,10 @@ test('accelerated click test can simulate a complete short race', () => {
     global.$ = $;
     global.RARRaceLogic = logic;
 
-    delete require.cache[require.resolve('../assets/js/dashboard.js')];
+    delete require.cache[require.resolve('../plugins/rad-am-ring-plugin/assets/js/dashboard.js')];
 
     try {
-        require('../assets/js/dashboard.js');
+        require('../plugins/rad-am-ring-plugin/assets/js/dashboard.js');
 
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);

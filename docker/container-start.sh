@@ -99,7 +99,7 @@ container run \
 define( 'WP_DEBUG_DISPLAY', false );
 define( 'SCRIPT_DEBUG', true );" \
   --volume "$WP_VOLUME:/var/www/html" \
-  --volume "$PROJECT_ROOT:/var/www/html/wp-content/plugins/rad-am-ring-plugin" \
+  --volume "$PROJECT_ROOT/plugins/rad-am-ring-plugin:/var/www/html/wp-content/plugins/rad-am-ring-plugin" \
   "$WORDPRESS_IMAGE"
 
 printf '%s\n' "WordPress container is starting: http://localhost:$WORDPRESS_PORT"

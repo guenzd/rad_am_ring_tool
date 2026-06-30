@@ -18,7 +18,7 @@ npm run lint:js
 
 The tests live in:
 
-- `tests/race-logic.test.js` for pure JavaScript race rules from `assets/js/race-logic.js`
+- `tests/race-logic.test.js` for pure JavaScript race rules from `plugins/rad-am-ring-plugin/assets/js/race-logic.js`
 - `tests/race-logic-php.test.php` for PHP queue/race helpers
 - `tests/dashboard-ui-click.test.js` for headless dashboard click flows
 

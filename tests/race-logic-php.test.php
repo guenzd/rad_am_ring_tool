@@ -2,7 +2,7 @@
 
 define( 'RAR_TESTING', true );
 
-require_once __DIR__ . '/../includes/class-race-logic.php';
+require_once __DIR__ . '/../plugins/rad-am-ring-plugin/includes/class-race-logic.php';
 
 function rar_test_driver( $order ) {
     return (object) [

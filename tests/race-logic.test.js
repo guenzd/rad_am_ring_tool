@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const logic = require('../assets/js/race-logic.js');
+const logic = require('../plugins/rad-am-ring-plugin/assets/js/race-logic.js');
 
 function parseDate(value) {
     if (!value) {

@@ -22,7 +22,8 @@ A complete, ready-to-install WordPress plugin for tracking 24-hour bike races. T
    ```
 
 2. **Copy the plugin folder:**
-   - Copy the entire `rad-am-ring-plugin` folder to your plugins directory
+   - In this repository, the installable plugin lives at `plugins/rad-am-ring-plugin`
+   - Copy that entire `rad-am-ring-plugin` folder to your WordPress plugins directory
    - Your directory should now look like:
      ```
      wp-content/plugins/rad-am-ring-plugin/
@@ -30,6 +31,7 @@ A complete, ready-to-install WordPress plugin for tracking 24-hour bike races. T
      ├── includes/
      ├── admin/
      ├── assets/
+     ├── public/
      └── readme.txt
      ```
 
@@ -180,19 +182,23 @@ You can load previous races:
 ## File Structure Explained
 
 ```
-rad-am-ring-plugin/
-├── rad-am-ring.php          # Main plugin file (hooks & AJAX)
-├── readme.txt               # Plugin readme
-├── includes/
-│   ├── class-database.php   # All database operations
-│   └── class-admin-dashboard.php  # WordPress admin setup
-├── admin/
-│   └── dashboard.php        # HTML template for dashboard
-└── assets/
-    ├── css/
-    │   └── dashboard.css    # Night-proof dark theme
-    └── js/
-        └── dashboard.js     # AJAX & UI logic
+plugins/
+└── rad-am-ring-plugin/
+    ├── rad-am-ring.php          # Main plugin file (hooks & AJAX)
+    ├── readme.txt               # Plugin readme
+    ├── includes/
+    │   ├── class-database.php   # All database operations
+    │   └── class-admin-dashboard.php  # WordPress admin setup
+    ├── admin/
+    │   └── dashboard.php        # HTML template for dashboard
+    ├── public/
+    │   └── dashboard.php        # Public dashboard template
+    └── assets/
+        ├── css/
+        │   └── dashboard.css    # Night-proof dark theme
+        └── js/
+            ├── dashboard.js     # AJAX & UI logic
+            └── race-logic.js    # Shared race calculations
 ```
 
 ## Current Capabilities
@@ -224,9 +230,9 @@ For a 24-hour race with 4 drivers (~600 total laps):
 
 The code is well-documented with comments. Key files to understand:
 
-1. **Dashboard interactions**: `assets/js/dashboard.js`
-2. **Database operations**: `includes/class-database.php`
-3. **AJAX endpoints**: `rad-am-ring.php`
+1. **Dashboard interactions**: `plugins/rad-am-ring-plugin/assets/js/dashboard.js`
+2. **Database operations**: `plugins/rad-am-ring-plugin/includes/class-database.php`
+3. **AJAX endpoints**: `plugins/rad-am-ring-plugin/rad-am-ring.php`
 
 ## License
 
