@@ -692,9 +692,9 @@ test('manual race start click keeps first driver visible and start correction av
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
         assert.match(harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
 
-        harness.elements.get('#manualSwitchTime').val('2026-05-16T15:15:00');
+        harness.elements.get('#manualSwitchTime').val('15:15:00');
         harness.elements.get('#manualSwitchTime').trigger('input');
-        harness.elements.get('#switchDriverBtn').trigger('click');
+        harness.elements.get('#updateLastSwitchTimeBtn').trigger('click');
 
         assert.equal(startRaceRequests, 1);
         assert.deepEqual(startRacePayloads, ['2026-05-16 15:15:00']);
@@ -704,7 +704,7 @@ test('manual race start click keeps first driver visible and start correction av
         assert.match(harness.elements.get('#swapForecast').html(), /rar-forecast-order">#1/);
         assert.match(harness.elements.get('#swapForecast').html(), /rar-forecast-name">Daniel/);
         assert.equal(harness.elements.get('#switchDriverBtn').text(), 'Erste Runde läuft');
-        assert.equal(harness.elements.get('#undoSwitchBtn').text(), 'Rennstart korrigieren');
+        assert.equal(harness.elements.get('#undoSwitchBtn').prop('disabled'), true);
     } finally {
         Date.now = originalNow;
         global.setInterval = originalSetInterval;
@@ -715,6 +715,36 @@ test('manual race start click keeps first driver visible and start correction av
         global.$ = originalDollar;
         global.rarData = originalRarData;
         global.RARRaceLogic = originalLogic;
+    }
+});
+
+test('start correction can be applied with übernehmen button', () => {
+    const context = createDashboardClickTest(
+        createShortRaceData({
+            id: 420,
+            startTime: '2026-05-16 10:00:00',
+            plannedEndTime: '2026-05-16 11:00:00',
+        }),
+        '2026-05-16T09:50:00'
+    );
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#updateLastSwitchTimeBtn').prop('disabled'), false);
+        assert.equal(context.harness.elements.get('#updateLastSwitchTimeBtn').text(), 'Startzeit speichern');
+
+        assert.equal(context.harness.elements.get('#manualSwitchTime').attr('type'), 'time');
+        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '10:00:00');
+
+        context.harness.elements.get('#manualSwitchTime').val('10:05:37');
+        context.harness.elements.get('#manualSwitchTime').trigger('input');
+        context.harness.elements.get('#updateLastSwitchTimeBtn').trigger('click');
+
+        assert.equal(context.raceData.race.start_time, '2026-05-16 10:05:37');
+        assert.deepEqual(context.raceData.rotations, []);
+    } finally {
+        context.restore();
     }
 });
 
@@ -773,7 +803,7 @@ test('start now button starts race without creating a driver switch', () => {
         assert.deepEqual(context.raceData.rotations, []);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
-        assert.equal(context.harness.elements.get('#undoSwitchBtn').prop('disabled'), false);
+        assert.equal(context.harness.elements.get('#undoSwitchBtn').prop('disabled'), true);
 
         const startRequestsBeforeCorrectionClick = context.ajaxRequests.filter((request) => request.action === 'rar_start_race').length;
         context.harness.elements.get('#undoSwitchBtn').trigger('click');
@@ -965,7 +995,8 @@ test('manual switch time defaults to race start before first real switch', () =>
     try {
         context.loadDashboard();
 
-        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '2026-05-16T10:00:00');
+        assert.equal(context.harness.elements.get('#manualSwitchTime').attr('type'), 'time');
+        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '10:00:00');
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);
     } finally {
         context.restore();
@@ -985,7 +1016,8 @@ test('manual switch time stays on race start when first switch is due but not re
     try {
         context.loadDashboard();
 
-        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '2026-05-16T10:00:00');
+        assert.equal(context.harness.elements.get('#manualSwitchTime').attr('type'), 'time');
+        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '10:00:00');
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
     } finally {
         context.restore();
@@ -1658,10 +1690,12 @@ test('advanced start correction keeps second precision before first real switch'
     try {
         context.loadDashboard();
 
-        assert.equal(context.harness.elements.get('#undoSwitchBtn').text(), 'Rennstart korrigieren');
-        context.harness.elements.get('#manualSwitchTime').val('2026-05-16T10:00:37');
+        assert.equal(context.harness.elements.get('#updateLastSwitchTimeBtn').text(), 'Startzeit speichern');
+        assert.equal(context.harness.elements.get('#undoSwitchBtn').prop('disabled'), true);
+        assert.equal(context.harness.elements.get('#manualSwitchTime').attr('type'), 'time');
+        context.harness.elements.get('#manualSwitchTime').val('10:00:37');
         context.harness.elements.get('#manualSwitchTime').trigger('input');
-        context.clickUndo();
+        context.harness.elements.get('#updateLastSwitchTimeBtn').trigger('click');
 
         assert.equal(context.raceData.race.start_time, '2026-05-16 10:00:37');
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Startfahrer/);

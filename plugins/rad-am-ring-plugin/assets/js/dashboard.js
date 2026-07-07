@@ -383,7 +383,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    function saveRaceStartTime() {
+    function startRaceNow() {
         if (!ensureCanEdit()) {
             return;
         }
@@ -393,24 +393,45 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        let manualStartTime = $('#manualSwitchTime').val();
-        let startTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
-        let startTimeValue = startTime ? formatDateTimeLocal(startTime) : '';
-        let isCorrection = manualStartTime && manualStartTime !== startTimeValue;
-        let parsedManualStartTime = manualStartTime ? new Date(manualStartTime) : null;
+        submitRaceStartTime(formatMysqlDateTimeLocal(getCurrentDate()), false);
+    }
 
-        if (isCorrection && (!parsedManualStartTime || Number.isNaN(parsedManualStartTime.getTime()))) {
+    function saveRaceStartTime(forceCorrection) {
+        if (!ensureCanEdit()) {
+            return;
+        }
+
+        if (!currentRaceId) {
+            showMessage('Bitte wählen Sie zuerst ein Rennen', 'error');
+            return;
+        }
+
+        let startTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
+        let manualStartTime = getManualSwitchTimeDate();
+        let isCorrection = !!(manualStartTime && startTime && Math.abs(manualStartTime.getTime() - startTime.getTime()) >= 1000);
+
+        if (forceCorrection && !isCorrection) {
+            $('#manualSwitchTime').focus();
+            showMessage('Startzeit im Feld ändern, dann Startzeit speichern klicken', 'error');
+            return;
+        }
+
+        if (isCorrection && (!manualStartTime || Number.isNaN(manualStartTime.getTime()))) {
             showMessage('Bitte gib eine gültige Startzeit ein', 'error');
             return;
         }
 
+        submitRaceStartTime(getManualSwitchTimeMysqlValue(), true);
+    }
+
+    function submitRaceStartTime(startTimeValue, isCorrection) {
         $.ajax({
             url: rarData.ajaxUrl,
             type: 'POST',
             data: {
                 action: 'rar_start_race',
                 race_id: currentRaceId,
-                start_time: isCorrection ? getManualSwitchTimeMysqlValue() : formatMysqlDateTimeLocal(getCurrentDate()),
+                start_time: startTimeValue,
                 nonce: rarData.nonce,
             },
             success: function(response) {
@@ -512,7 +533,7 @@ jQuery(document).ready(function($) {
         }
 
         if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
-            saveRaceStartTime();
+            startRaceNow();
             return;
         }
 
@@ -538,11 +559,6 @@ jQuery(document).ready(function($) {
         }
 
         if (hasNoRecordedSwitches() && !isFirstSwitchDue(getFirstSwitchReferenceDate())) {
-            if (isRaceStartAdjustmentMode() && isRaceStartTimeCorrection()) {
-                saveRaceStartTime();
-                return;
-            }
-
             showMessage('Der erste Fahrer ist noch auf der Strecke', 'error');
             updateNextSwitchPreview();
             return;
@@ -583,9 +599,6 @@ jQuery(document).ready(function($) {
         }
 
         if (isRaceStartAdjustmentMode()) {
-            if (isRaceStartTimeCorrection()) {
-                saveRaceStartTime();
-            }
             return;
         }
 
@@ -630,6 +643,11 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        if (isRaceStartAdjustmentMode()) {
+            saveRaceStartTime(true);
+            return;
+        }
+
         if (hasNoRecordedSwitches()) {
             showMessage('Noch kein Fahrerwechsel vorhanden', 'error');
             return;
@@ -637,7 +655,7 @@ jQuery(document).ready(function($) {
 
         if (!manualSwitchTimeEdited) {
             $('#manualSwitchTime').focus();
-            showMessage('Wechselzeit im Feld ändern, dann Übernehmen klicken', 'error');
+            showMessage('Wechselzeit im Feld ändern, dann Wechselzeit speichern klicken', 'error');
             return;
         }
 
@@ -759,17 +777,10 @@ jQuery(document).ready(function($) {
         let defaultTime = getDefaultManualSwitchTime();
         let $manualSwitchTime = $('#manualSwitchTime');
 
-        if (hasNoRecordedSwitches()) {
-            $manualSwitchTime
-                .attr('type', 'datetime-local')
-                .attr('step', '1')
-                .val(formatDateTimeLocal(defaultTime));
-        } else {
-            $manualSwitchTime
-                .attr('type', 'time')
-                .attr('step', '1')
-                .val(formatTimeInput(defaultTime));
-        }
+        $manualSwitchTime
+            .attr('type', 'time')
+            .attr('step', '1')
+            .val(formatTimeInput(defaultTime));
 
         manualSwitchTimeEdited = false;
 
@@ -850,14 +861,12 @@ jQuery(document).ready(function($) {
 
         if (startAdjustmentMode) {
             $label.text('Rennstart anpassen');
-            $updateLastSwitchButton.prop('disabled', true);
-            $('#undoSwitchBtn').prop('disabled', false).text('Rennstart korrigieren');
+            $updateLastSwitchButton.prop('disabled', false).text('Startzeit speichern');
+            $('#undoSwitchBtn').prop('disabled', true).text('Letzten Fahrerwechsel rückgängig');
 
             if (isBeforeRaceStart()) {
-                $switchButton.prop('disabled', false).text(isCorrection ? 'Startzeit korrigieren' : 'Rennen jetzt starten');
+                $switchButton.prop('disabled', false).text('Rennen jetzt starten');
                 updateRaceStartCountdown(startTime);
-            } else if (isCorrection) {
-                $switchButton.prop('disabled', false).text('Startzeit korrigieren');
             } else {
                 $switchButton.prop('disabled', true).text('Erste Runde läuft');
             }
@@ -868,7 +877,7 @@ jQuery(document).ready(function($) {
 
         $label.text('Wechselzeit nachträglich korrigieren');
         $('#undoSwitchBtn').text('Letzten Fahrerwechsel rückgängig');
-        $updateLastSwitchButton.prop('disabled', hasNoRecordedSwitches());
+        $updateLastSwitchButton.prop('disabled', hasNoRecordedSwitches()).text('Wechselzeit speichern');
         let switchDrivers = getNextSwitchDrivers();
 
         if (switchDrivers) {
@@ -882,7 +891,7 @@ jQuery(document).ready(function($) {
 
     function promptRaceStartCorrection() {
         $('#manualSwitchTime').focus();
-        showMessage('Startzeit im Feld ändern, dann Rennstart korrigieren klicken', 'error');
+        showMessage('Startzeit im Feld ändern, dann Startzeit speichern klicken', 'error');
     }
 
     function isRaceStartAdjustmentMode() {
@@ -1934,7 +1943,7 @@ jQuery(document).ready(function($) {
         if (!raceData || !raceData.rotations || raceData.rotations.length === 0) {
             html += '<p>Noch keine Wechsel</p>';
             if (isRaceStartAdjustmentMode()) {
-                $('#undoSwitchBtn').prop('disabled', false).text('Rennstart korrigieren');
+                $('#undoSwitchBtn').prop('disabled', true).text('Letzten Fahrerwechsel rückgängig');
             } else {
                 $('#undoSwitchBtn').prop('disabled', true).text('Letzten Fahrerwechsel rückgängig');
             }
