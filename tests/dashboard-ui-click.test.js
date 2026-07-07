@@ -944,7 +944,8 @@ test('manual switch time defaults to latest real switch after refresh', () => {
     try {
         context.loadDashboard();
 
-        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '2026-05-16T10:15:00');
+        assert.equal(context.harness.elements.get('#manualSwitchTime').attr('type'), 'time');
+        assert.equal(context.harness.elements.get('#manualSwitchTime').val(), '10:15:00');
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#2 Moritz/);
     } finally {
         context.restore();
@@ -1067,6 +1068,74 @@ test('race after planned end still forecasts from a corrected switch before end'
         ]);
         assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /Geplante Rennzeit erreicht/);
         assert.match(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Moritz/);
+    } finally {
+        context.restore();
+    }
+});
+
+test('last switch correction accepts time without selecting date', () => {
+    const raceData = createShortRaceData({ id: 48 });
+    raceData.rotations = [
+        {
+            id: 1,
+            from_driver_id: 1,
+            to_driver_id: 2,
+            from_driver: 'Daniel',
+            to_driver: 'Moritz',
+            switched_at: '2026-05-16 10:40:00',
+        },
+    ];
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:45:00');
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#manualSwitchTime').attr('type'), 'time');
+        context.harness.elements.get('#manualSwitchTime').val('10:15:37');
+        context.harness.elements.get('#manualSwitchTime').trigger('input');
+        context.harness.elements.get('#updateLastSwitchTimeBtn').trigger('click');
+
+        const updateRequest = context.ajaxRequests.find((request) => request.action === 'rar_update_last_driver_switch_time');
+        assert.equal(updateRequest.switched_at, '2026-05-16 10:15:37');
+        assert.equal(context.raceData.rotations[0].switched_at, '2026-05-16 10:15:37');
+    } finally {
+        context.restore();
+    }
+});
+
+test('switch preview shows current lap time and log shows driven lap times', () => {
+    const raceData = createShortRaceData({
+        id: 49,
+        startTime: '2026-05-16 10:00:00',
+        plannedEndTime: '2026-05-16 11:30:00',
+    });
+    raceData.rotations = [
+        {
+            id: 1,
+            from_driver_id: 1,
+            to_driver_id: 2,
+            from_driver: 'Daniel',
+            to_driver: 'Moritz',
+            switched_at: '2026-05-16 10:15:00',
+        },
+        {
+            id: 2,
+            from_driver_id: 2,
+            to_driver_id: 3,
+            from_driver: 'Moritz',
+            to_driver: 'Heiko',
+            switched_at: '2026-05-16 10:37:30',
+        },
+    ];
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:42:45');
+
+    try {
+        context.loadDashboard();
+
+        assert.match(context.harness.elements.get('#nextSwitchTimePreview').html(), /Aktuelle Rundenzeit/);
+        assert.match(context.harness.elements.get('#nextSwitchTimePreview').html(), /00:05:15/);
+        assert.match(context.harness.elements.get('#switchLog').html(), /Rundenzeit: 00:15:00/);
+        assert.match(context.harness.elements.get('#switchLog').html(), /Rundenzeit: 00:22:30/);
     } finally {
         context.restore();
     }

@@ -10,6 +10,51 @@ if ( ! defined( 'ABSPATH' ) ) {
 $public_races = RAR_Database::get_all_races();
 $public_race = ! empty( $public_races ) ? $public_races[0] : null;
 $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race->id ) ) : null;
+
+if ( ! function_exists( 'rar_public_format_lap_duration' ) ) {
+    function rar_public_format_lap_duration( $seconds ) {
+        $total_seconds = intval( round( floatval( $seconds ) ) );
+
+        if ( $total_seconds <= 0 ) {
+            return '--';
+        }
+
+        return sprintf( '%02d:%02d', floor( $total_seconds / 60 ), $total_seconds % 60 );
+    }
+}
+
+if ( ! function_exists( 'rar_public_format_elapsed_duration' ) ) {
+    function rar_public_format_elapsed_duration( $seconds ) {
+        $total_seconds = intval( round( floatval( $seconds ) ) );
+
+        if ( $total_seconds < 0 ) {
+            return '';
+        }
+
+        return sprintf(
+            '%02d:%02d:%02d',
+            floor( $total_seconds / 3600 ),
+            floor( ( $total_seconds % 3600 ) / 60 ),
+            $total_seconds % 60
+        );
+    }
+}
+
+if ( ! function_exists( 'rar_public_get_rotation_lap_seconds' ) ) {
+    function rar_public_get_rotation_lap_seconds( $rotation, $previous_time ) {
+        if ( ! $rotation || ! $previous_time || empty( $rotation->switched_at ) ) {
+            return null;
+        }
+
+        $switched_at = strtotime( $rotation->switched_at );
+
+        if ( false === $switched_at || $switched_at < $previous_time ) {
+            return null;
+        }
+
+        return $switched_at - $previous_time;
+    }
+}
 ?>
 
 <div class="rar-container rar-public-container">
@@ -45,7 +90,7 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
                                 <div class="rar-driver-order">#<?php echo esc_html( $driver->driver_order ); ?></div>
                                 <div class="rar-driver-name"><?php echo esc_html( $driver->driver_name ); ?></div>
                                 <div class="rar-driver-stats-row">
-                                    <span><small>Plan</small><strong><?php echo esc_html( number_format_i18n( floatval( $driver->avg_lap_time ) / 60, 2 ) ); ?>m</strong></span>
+                                    <span><small>Plan</small><strong><?php echo esc_html( rar_public_format_lap_duration( $driver->avg_lap_time ) ); ?></strong></span>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -71,10 +116,18 @@ $public_data = $public_race ? RAR_Database::get_race_data( intval( $public_race-
                         </div>
                     <?php endif; ?>
                     <?php if ( $public_data && ! empty( $public_data['rotations'] ) ) : ?>
+                        <?php $previous_switch_time = $public_race && ! empty( $public_race->start_time ) ? strtotime( $public_race->start_time ) : null; ?>
                         <?php foreach ( $public_data['rotations'] as $rotation ) : ?>
+                            <?php
+                            $lap_seconds = rar_public_get_rotation_lap_seconds( $rotation, $previous_switch_time );
+                            $previous_switch_time = ! empty( $rotation->switched_at ) ? strtotime( $rotation->switched_at ) : $previous_switch_time;
+                            ?>
                             <div class="rar-log-entry">
                                 <?php echo esc_html( $rotation->from_driver ); ?> zu <?php echo esc_html( $rotation->to_driver ); ?>
                                 (<?php echo esc_html( $rotation->switched_at ); ?>)
+                                <?php if ( null !== $lap_seconds ) : ?>
+                                    <span class="rar-log-lap-time">Rundenzeit: <?php echo esc_html( rar_public_format_elapsed_duration( $lap_seconds ) ); ?></span>
+                                <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
                     <?php else : ?>

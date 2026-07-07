@@ -3,7 +3,7 @@
  * Plugin Name: Rad am Ring
  * Plugin URI: 
  * Description: 24-Stunden-Bike-Rennen-Fahrer- & Rundenverfolgungs-Tool
- * Version: 0.1.1
+ * Version: 0.1.2
  * Author: Daniel
  * Author URI: 
  * License: GPL-2.0+
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'RAR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'RAR_PLUGIN_VERSION', '0.1.1' );
+define( 'RAR_PLUGIN_VERSION', '0.1.2' );
 define( 'RAR_DB_VERSION', '0.6.0' );
 define( 'RAR_FIRST_SWITCH_LOCK_MINUTES', 15 );
 

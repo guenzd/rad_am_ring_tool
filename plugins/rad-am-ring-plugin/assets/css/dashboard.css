@@ -101,10 +101,8 @@ body.rar-public-dashboard-page .wp-block-post-title {
 
 body:has(.rar-public-container) .entry-content,
 body:has(.rar-public-container) .wp-block-post-content,
-body:has(.rar-public-container) .wp-site-blocks,
 body.rar-public-dashboard-page .entry-content,
-body.rar-public-dashboard-page .wp-block-post-content,
-body.rar-public-dashboard-page .wp-site-blocks {
+body.rar-public-dashboard-page .wp-block-post-content {
     max-width: none;
 }
 
@@ -829,6 +827,13 @@ input.rar-input:-webkit-autofill,
     border-bottom: 0;
 }
 
+.rar-log-lap-time {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--rar-muted);
+    font-weight: 900;
+}
+
 .rar-forecast-list {
     display: grid;
     align-content: start;
@@ -1061,6 +1066,29 @@ input.rar-input:-webkit-autofill,
     background: var(--rar-danger-bg);
 }
 
+.rar-current-lap-time {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 7px;
+    border-top: 1px solid var(--rar-border);
+}
+
+.rar-current-lap-time span {
+    font-size: 12px;
+}
+
+.rar-current-lap-time strong {
+    justify-self: auto;
+    color: var(--rar-text-bright);
+    font-family: Consolas, Monaco, monospace;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+}
+
 .rar-switch-time {
     margin-bottom: 8px;
 }
@@ -1252,5 +1280,297 @@ input.rar-input:-webkit-autofill,
     .rar-message {
         top: 56px;
         right: 12px;
+    }
+}
+
+body:has(.rar-public-container),
+body.rar-public-dashboard-page {
+    background: #ffffff;
+}
+
+body:has(.rar-public-container) .entry-content,
+body:has(.rar-public-container) .wp-block-post-content,
+body.rar-public-dashboard-page .entry-content,
+body.rar-public-dashboard-page .wp-block-post-content {
+    width: min(100%, 980px);
+    max-width: 980px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+body:has(.rar-public-container) .entry-content > *,
+body:has(.rar-public-container) .wp-block-post-content > *,
+body.rar-public-dashboard-page .entry-content > *,
+body.rar-public-dashboard-page .wp-block-post-content > * {
+    max-width: 100%;
+}
+
+.rar-public-container {
+    --rar-page-bg: #ffffff;
+    --rar-surface: #ffffff;
+    --rar-surface-soft: #f7f9fc;
+    --rar-panel-dark: #f1f5f9;
+    --rar-control-bg: #ffffff;
+    --rar-control-bg-muted: #f8fafc;
+    --rar-control-bg-dark: #eaf0f6;
+    --rar-control-bg-focus: #ffffff;
+    --rar-text: #334155;
+    --rar-heading: #172033;
+    --rar-text-bright: #0f172a;
+    --rar-text-inverse: #ffffff;
+    --rar-muted: #667085;
+    --rar-muted-strong: #475467;
+    --rar-border: #d8e0ea;
+    --rar-border-strong: #b8c5d4;
+    --rar-control-border: #cbd5e1;
+    --rar-control-border-muted: #e2e8f0;
+    --rar-badge-bg: #eef3f8;
+    --rar-badge-border-current: #bfdbfe;
+    --rar-primary: #0b7db3;
+    --rar-success: #16a34a;
+    --rar-danger: #dc2626;
+    --rar-danger-bg: #dc2626;
+    --rar-danger-bg-dark: #b91c1c;
+    --rar-warning: #f59e0b;
+    --rar-focus-ring: rgba(11, 125, 179, 0.22);
+    --rar-shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.08);
+    --rar-shadow-strong: 0 8px 20px rgba(15, 23, 42, 0.12);
+    --rar-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+    --rar-driver-blue: #1d7ed0;
+    --rar-driver-blue-bg: #eef7ff;
+    --rar-driver-blue-border: #9dccf5;
+    --rar-driver-green: #16a34a;
+    --rar-driver-green-bg: #effaf3;
+    --rar-driver-green-border: #9fd9b5;
+    --rar-driver-yellow: #d69a00;
+    --rar-driver-yellow-bg: #fff8e6;
+    --rar-driver-yellow-border: #f1cf72;
+    --rar-driver-red: #dc4437;
+    --rar-driver-red-bg: #fff2f1;
+    --rar-driver-red-border: #f0aaa4;
+    max-width: 980px;
+    min-height: 0;
+    margin: 0 auto 32px;
+    padding: 0 16px 28px;
+    color: var(--rar-text);
+}
+
+.rar-public-container .rar-content {
+    gap: 16px;
+}
+
+.rar-public-container .rar-public-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.rar-public-container .rar-race-main-column,
+.rar-public-container .rar-race-side-column {
+    grid-column: auto;
+    gap: 16px;
+}
+
+.rar-public-container .rar-race-title-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.rar-public-container #activeRaceName {
+    margin: 0;
+    color: var(--rar-primary);
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1.08;
+}
+
+.rar-public-container .rar-race-end-countdown,
+.rar-public-container .rar-current-clock {
+    justify-self: start;
+    min-height: 0;
+    padding-bottom: 5px;
+    color: #9aa6b2;
+    border-bottom-color: #74b7e2;
+    font-size: clamp(18px, 2.4vw, 24px);
+}
+
+.rar-public-container .rar-race-title-actions {
+    justify-content: flex-start;
+}
+
+.rar-public-container .rar-card {
+    padding: 18px;
+    background: var(--rar-surface);
+    border: 1px solid var(--rar-border);
+    border-top: 4px solid var(--rar-primary);
+    box-shadow: var(--rar-shadow-soft);
+}
+
+.rar-public-container .rar-card h3,
+.rar-public-container .rar-collapsible-card > summary {
+    color: var(--rar-heading);
+    font-size: clamp(18px, 2.4vw, 22px);
+    line-height: 1.2;
+}
+
+.rar-public-container .rar-collapsible-card {
+    padding: 0;
+}
+
+.rar-public-container .rar-collapsible-card > summary {
+    min-height: 54px;
+    padding: 16px 18px;
+}
+
+.rar-public-container .rar-switch-preview {
+    grid-template-columns: 1fr;
+}
+
+.rar-public-container .rar-switch-driver,
+.rar-public-container .rar-driver-card,
+.rar-public-container .rar-forecast-item {
+    border-radius: 6px;
+}
+
+.rar-public-container .rar-switch-time-preview {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    color: var(--rar-heading);
+    background: var(--rar-control-bg-muted);
+    border: 1px solid var(--rar-border);
+    border-left: 6px solid var(--rar-success);
+}
+
+.rar-public-container .rar-switch-time-preview strong,
+.rar-public-container .rar-switch-time-preview em {
+    justify-self: start;
+}
+
+.rar-public-container .rar-switch-time-preview strong {
+    color: var(--rar-heading);
+    font-size: clamp(22px, 3.2vw, 30px);
+}
+
+.rar-public-container .rar-switch-time-preview em {
+    max-width: 100%;
+    padding: 0;
+    color: var(--rar-primary);
+    background: transparent;
+    font-size: clamp(24px, 4vw, 34px);
+    overflow-wrap: anywhere;
+}
+
+.rar-public-container .rar-current-lap-time strong {
+    color: var(--rar-primary);
+}
+
+.rar-public-container .rar-driver-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 12px;
+    padding: 12px;
+}
+
+.rar-public-container .rar-driver-name {
+    color: var(--rar-heading);
+    font-size: 18px;
+}
+
+.rar-public-container .rar-driver-stats-row {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rar-public-container .rar-driver-stats-row span,
+.rar-public-container .rar-driver-plan-field {
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.rar-public-container .rar-forecast-list {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+}
+
+.rar-public-container .rar-forecast-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    min-height: 0;
+    padding: 12px;
+}
+
+.rar-public-container .rar-forecast-main {
+    gap: 7px;
+}
+
+.rar-public-container .rar-forecast-name {
+    font-size: 18px;
+}
+
+.rar-public-container .rar-forecast-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+}
+
+.rar-public-container .rar-forecast-meta strong {
+    min-width: 0;
+    color: var(--rar-primary);
+    font-size: clamp(24px, 4vw, 34px);
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.rar-public-container .rar-log {
+    background: var(--rar-control-bg-muted);
+    border-color: var(--rar-border);
+    color: var(--rar-text);
+}
+
+.rar-public-container .rar-log-entry {
+    color: var(--rar-text);
+    border-bottom-color: var(--rar-border);
+}
+
+@media (min-width: 1100px) {
+    .rar-public-container {
+        max-width: 1040px;
+    }
+
+    .rar-public-container .rar-public-section {
+        grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+    }
+
+    .rar-public-container .rar-race-title-row {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .rar-public-container .rar-race-main-column {
+        grid-column: 1;
+    }
+
+    .rar-public-container .rar-race-side-column {
+        grid-column: 2;
+    }
+}
+
+@media (max-width: 520px) {
+    .rar-public-container {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .rar-public-container .rar-card {
+        padding: 14px;
+    }
+
+    .rar-public-container .rar-forecast-meta {
+        display: grid;
+        justify-items: start;
+    }
+
+    .rar-public-container .rar-forecast-meta strong {
+        text-align: left;
     }
 }

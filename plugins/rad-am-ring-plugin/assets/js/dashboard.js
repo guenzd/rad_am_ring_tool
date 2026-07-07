@@ -637,7 +637,7 @@ jQuery(document).ready(function($) {
 
         if (!manualSwitchTimeEdited) {
             $('#manualSwitchTime').focus();
-            showMessage('Wechselzeit im Feld ändern, dann letzten Wechsel korrigieren klicken', 'error');
+            showMessage('Wechselzeit im Feld ändern, dann Übernehmen klicken', 'error');
             return;
         }
 
@@ -757,8 +757,20 @@ jQuery(document).ready(function($) {
 
     function updateManualTimeInputs() {
         let defaultTime = getDefaultManualSwitchTime();
+        let $manualSwitchTime = $('#manualSwitchTime');
 
-        $('#manualSwitchTime').val(formatDateTimeLocal(defaultTime));
+        if (hasNoRecordedSwitches()) {
+            $manualSwitchTime
+                .attr('type', 'datetime-local')
+                .attr('step', '1')
+                .val(formatDateTimeLocal(defaultTime));
+        } else {
+            $manualSwitchTime
+                .attr('type', 'time')
+                .attr('step', '1')
+                .val(formatTimeInput(defaultTime));
+        }
+
         manualSwitchTimeEdited = false;
 
         updateSwitchTimeControls();
@@ -791,11 +803,33 @@ jQuery(document).ready(function($) {
 
         let normalizedValue = value.replace('T', ' ');
 
+        if (/^\d{2}:\d{2}(:\d{2})?$/.test(normalizedValue)) {
+            let referenceDate = getManualSwitchTimeReferenceDate();
+
+            if (!referenceDate) {
+                return '';
+            }
+
+            return formatDateInput(referenceDate) + ' ' + (normalizedValue.length === 5 ? normalizedValue + ':00' : normalizedValue);
+        }
+
         if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(normalizedValue)) {
             return normalizedValue + ':00';
         }
 
         return normalizedValue;
+    }
+
+    function getManualSwitchTimeReferenceDate() {
+        let rotations = getOrderedRotations();
+        let latestRotation = rotations.length ? rotations[rotations.length - 1] : null;
+        let latestSwitchTime = latestRotation ? parseWpDate(latestRotation.switched_at) : null;
+
+        if (latestSwitchTime) {
+            return latestSwitchTime;
+        }
+
+        return raceData && raceData.race ? parseWpDate(raceData.race.start_time) : getCurrentDate();
     }
 
     function updateSwitchTimeControls() {
@@ -934,20 +968,21 @@ jQuery(document).ready(function($) {
         }
 
         if (Date.now() >= startTime.getTime()) {
-            $('#nextSwitchTimePreview').html(
-                '<span>Rennstart</span>' +
-                '<strong>' + formatTime(startTime) + '</strong>' +
-                '<em class="is-urgent">' + formatCountdown(startTime) + '</em>'
-            );
-            return;
-        }
-
         $('#nextSwitchTimePreview').html(
-            '<span>Start in</span>' +
+            '<span>Rennstart</span>' +
             '<strong>' + formatTime(startTime) + '</strong>' +
-            '<em>' + formatCountdown(startTime) + '</em>'
+            '<em class="is-urgent">' + formatCountdown(startTime) + '</em>' +
+            renderCurrentLapTime()
         );
+        return;
     }
+
+    $('#nextSwitchTimePreview').html(
+        '<span>Start in</span>' +
+        '<strong>' + formatTime(startTime) + '</strong>' +
+        '<em>' + formatCountdown(startTime) + '</em>'
+    );
+}
 
     /**
      * Update drivers list display
@@ -968,15 +1003,21 @@ jQuery(document).ready(function($) {
                 let stats = lapStats.byDriver[driver.id] || { count: 0, total: 0, recentAverage: null };
                 let remainingLaps = lapCountProjection.remainingByDriver[driver.id] || 0;
                 let rideCountdown = getDriverRideCountdown(driver, lapStats);
+                let driverNameHtml = publicView
+                    ? '<div class="rar-driver-name">' + escapeHtml(driver.driver_name) + '</div>'
+                    : '<label class="rar-driver-name-field"><small>Name</small><input type="text" class="rar-driver-name-input" data-driver-id="' + driver.id + '" value="' + escapeHtml(driver.driver_name) + '" aria-label="Fahrername"></label>';
+                let planHtml = publicView
+                    ? '<span><small>Plan</small><strong>' + formatLapDuration(driver.avg_lap_time) + '</strong></span>'
+                    : '<label class="rar-driver-plan-field"><small>Plan</small><input type="text" inputmode="numeric" class="rar-driver-plan-time" data-driver-id="' + driver.id + '" value="' + (driver.avg_lap_time ? formatLapDuration(driver.avg_lap_time) : '') + '" aria-label="Planzeit in Minuten"></label>';
 
                 html += '<div class="rar-driver-card ' + getDriverColorClass(driver) + '" data-driver-order="' + driver.driver_order + '" tabindex="0" role="button" aria-pressed="false">' +
                     '<div class="rar-driver-order">#' + driver.driver_order + '</div>' +
-                    '<label class="rar-driver-name-field"><small>Name</small><input type="text" class="rar-driver-name-input" data-driver-id="' + driver.id + '" value="' + escapeHtml(driver.driver_name) + '" aria-label="Fahrername"></label>' +
+                    driverNameHtml +
                     '<div class="rar-driver-stats-row">' +
                         '<span><small>Runden</small><strong>' + stats.count + '</strong></span>' +
                         '<span><small>Noch</small><strong>' + remainingLaps + '</strong></span>' +
-                        '<label class="rar-driver-plan-field"><small>Plan</small><input type="text" inputmode="decimal" class="rar-driver-plan-time" data-driver-id="' + driver.id + '" value="' + (driver.avg_lap_time ? (driver.avg_lap_time / 60).toFixed(2) : '') + '" aria-label="Planzeit in Minuten"></label>' +
-                        '<span><small>3er Ø</small><strong>' + (stats.recentAverage ? (stats.recentAverage / 60).toFixed(2) : '--') + 'm</strong></span>' +
+                        planHtml +
+                        '<span><small>3er Ø</small><strong>' + formatLapDuration(stats.recentAverage) + '</strong></span>' +
                         '<span><small>' + rideCountdown.label + '</small><strong>' + rideCountdown.value + '</strong></span>' +
                     '</div>' +
                     '</div>';
@@ -994,10 +1035,10 @@ jQuery(document).ready(function($) {
         }
 
         let driverId = parseInt($input.data('driver-id'), 10);
-        let minutes = parseFloat(String($input.val()).replace(',', '.'));
+        let seconds = parsePlanTimeInput($input.val());
 
-        if (!currentRaceId || Number.isNaN(driverId) || Number.isNaN(minutes) || minutes <= 0) {
-            showMessage('Bitte geben Sie eine gültige Planzeit in Minuten ein', 'error');
+        if (!currentRaceId || Number.isNaN(driverId) || seconds <= 0) {
+            showMessage('Bitte geben Sie eine gültige Planzeit ein', 'error');
             return;
         }
 
@@ -1010,7 +1051,7 @@ jQuery(document).ready(function($) {
                 action: 'rar_update_driver_plan_time',
                 race_id: currentRaceId,
                 driver_id: driverId,
-                avg_lap_time: minutes * 60,
+                avg_lap_time: seconds,
                 nonce: rarData.nonce,
             },
             success: function(response) {
@@ -1747,7 +1788,8 @@ jQuery(document).ready(function($) {
         $('#nextSwitchTimePreview').html(
             '<span>' + getSwitchTimePreviewLabel(switchDrivers, prognosis) + '</span>' +
             '<strong>' + formatTime(prognosis.time) + '</strong>' +
-            '<em class="' + getCountdownClass(prognosis.time) + '">' + formatCountdown(prognosis.time) + '</em>'
+            '<em class="' + getCountdownClass(prognosis.time) + '">' + formatCountdown(prognosis.time) + '</em>' +
+            renderCurrentLapTime()
         );
     }
 
@@ -1846,6 +1888,41 @@ jQuery(document).ready(function($) {
         return targetOffset > 0 ? targetOffset : DEFAULT_FINAL_LAP_OFFSET_SECONDS;
     }
 
+    function renderCurrentLapTime() {
+        let currentLapSeconds = getCurrentLapElapsedSeconds();
+
+        if (currentLapSeconds === null) {
+            return '';
+        }
+
+        return '<div class="rar-current-lap-time"><span>Aktuelle Rundenzeit</span><strong>' + formatDuration(currentLapSeconds) + '</strong></div>';
+    }
+
+    function getCurrentLapElapsedSeconds() {
+        if (!raceData || !raceData.race || raceData.race.end_time) {
+            return null;
+        }
+
+        let lapStats = getInferredLapStats();
+        let baseTime = getForecastBaseTime(lapStats);
+
+        if (!baseTime || Date.now() < baseTime.getTime()) {
+            return null;
+        }
+
+        return Math.max(0, Math.round((Date.now() - baseTime.getTime()) / 1000));
+    }
+
+    function getRotationLapSeconds(rotation, previousTime) {
+        let switchedAt = parseWpDate(rotation ? rotation.switched_at : null);
+
+        if (!switchedAt || !previousTime || switchedAt.getTime() < previousTime.getTime()) {
+            return null;
+        }
+
+        return Math.round((switchedAt.getTime() - previousTime.getTime()) / 1000);
+    }
+
     /**
      * Update switch log
      */
@@ -1863,11 +1940,18 @@ jQuery(document).ready(function($) {
             }
         } else {
             $('#undoSwitchBtn').prop('disabled', false).text('Letzten Fahrerwechsel rückgängig');
-            raceData.rotations.forEach(function(rotation) {
+            let previousTime = raceData && raceData.race ? parseWpDate(raceData.race.start_time) : null;
+
+            getOrderedRotations().forEach(function(rotation) {
+                let lapSeconds = getRotationLapSeconds(rotation, previousTime);
+
                 html += '<div class="rar-log-entry">' +
                     escapeHtml(rotation.from_driver || '') + ' zu ' + escapeHtml(rotation.to_driver || '') +
                     ' (' + escapeHtml(rotation.switched_at || '') + ')' +
+                    (lapSeconds !== null ? ' <span class="rar-log-lap-time">Rundenzeit: ' + escapeHtml(formatDuration(lapSeconds)) + '</span>' : '') +
                     '</div>';
+
+                previousTime = parseWpDate(rotation.switched_at) || previousTime;
             });
         }
 
@@ -1954,6 +2038,18 @@ jQuery(document).ready(function($) {
             String(date.getSeconds()).padStart(2, '0');
     }
 
+    function formatDateInput(date) {
+        return date.getFullYear() + '-' +
+            String(date.getMonth() + 1).padStart(2, '0') + '-' +
+            String(date.getDate()).padStart(2, '0');
+    }
+
+    function formatTimeInput(date) {
+        return String(date.getHours()).padStart(2, '0') + ':' +
+            String(date.getMinutes()).padStart(2, '0') + ':' +
+            String(date.getSeconds()).padStart(2, '0');
+    }
+
     function formatMysqlDateTimeLocal(date) {
         return formatDateTimeLocal(date).replace('T', ' ');
     }
@@ -1971,6 +2067,59 @@ jQuery(document).ready(function($) {
         return prefix + String(hours).padStart(2, '0') + ':' +
             String(minutes).padStart(2, '0') + ':' +
             String(seconds).padStart(2, '0');
+    }
+
+    function formatDuration(totalSeconds) {
+        let prefix = totalSeconds < 0 ? '-' : '';
+        let absoluteSeconds = Math.abs(Math.round(totalSeconds));
+        let hours = Math.floor(absoluteSeconds / 3600);
+        let minutes = Math.floor((absoluteSeconds % 3600) / 60);
+        let seconds = absoluteSeconds % 60;
+
+        return prefix + String(hours).padStart(2, '0') + ':' +
+            String(minutes).padStart(2, '0') + ':' +
+            String(seconds).padStart(2, '0');
+    }
+
+    function formatLapDuration(value) {
+        let totalSeconds = Math.round(parseFloat(value || 0));
+
+        if (!totalSeconds || Number.isNaN(totalSeconds)) {
+            return '--';
+        }
+
+        let minutes = Math.floor(totalSeconds / 60);
+        let seconds = totalSeconds % 60;
+
+        return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    }
+
+    function parsePlanTimeInput(value) {
+        let normalizedValue = String(value || '').trim();
+
+        if (!normalizedValue) {
+            return NaN;
+        }
+
+        if (normalizedValue.includes(':')) {
+            let parts = normalizedValue.split(':');
+
+            if (parts.length !== 2) {
+                return NaN;
+            }
+
+            let minutes = parseInt(parts[0], 10);
+            let seconds = parseInt(parts[1], 10);
+
+            if (Number.isNaN(minutes) || Number.isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
+                return NaN;
+            }
+
+            return (minutes * 60) + seconds;
+        }
+
+        let decimalMinutes = parseFloat(normalizedValue.replace(',', '.'));
+        return Number.isNaN(decimalMinutes) ? NaN : decimalMinutes * 60;
     }
 
     function escapeHtml(value) {

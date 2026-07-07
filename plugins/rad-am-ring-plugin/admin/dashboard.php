@@ -96,7 +96,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <span id="manualSwitchTimeLabel">Wechselzeit nachträglich korrigieren</span>
                                 <input type="datetime-local" id="manualSwitchTime" class="rar-input" step="1">
                             </label>
-                            <button id="updateLastSwitchTimeBtn" class="rar-btn">Wechsel editieren</button>
+                            <button id="updateLastSwitchTimeBtn" class="rar-btn">Übernehmen</button>
                         </div>
                         <div class="rar-switch-actions">
                             <button id="switchDriverBtn" class="rar-btn rar-btn-secondary">Fahrerwechsel</button>
