@@ -3,7 +3,7 @@
  * Plugin Name: Rad am Ring
  * Plugin URI: 
  * Description: 24-Stunden-Bike-Rennen-Fahrer- & Rundenverfolgungs-Tool
- * Version: 0.1.2
+ * Version: 0.1.3
  * Author: Daniel
  * Author URI: 
  * License: GPL-2.0+
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'RAR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'RAR_PLUGIN_VERSION', '0.1.2' );
+define( 'RAR_PLUGIN_VERSION', '0.1.3' );
 define( 'RAR_DB_VERSION', '0.6.0' );
 define( 'RAR_FIRST_SWITCH_LOCK_MINUTES', 15 );
 
@@ -320,9 +320,8 @@ function rar_ajax_switch_driver() {
         wp_send_json_error( 'Rennen nicht gefunden' );
     }
 
-    $switch_drivers = RAR_Race_Logic::get_next_switch_drivers( $data );
-    if ( ! $switch_drivers ) {
-        wp_send_json_error( 'Kein Fahrerwechsel möglich' );
+    if ( ! empty( $data['race']->end_time ) ) {
+        wp_send_json_error( 'Das Rennen ist bereits beendet' );
     }
 
     $switched_at = current_time( 'mysql' );
@@ -332,6 +331,17 @@ function rar_ajax_switch_driver() {
             wp_send_json_error( 'Ungültige Wechselzeit' );
         }
         $switched_at = $switched_at_datetime->format( 'Y-m-d H:i:s' );
+    }
+
+    $planned_end_datetime = rar_parse_local_datetime( $data['race']->planned_end_time ?? '' );
+    $switched_at_datetime = rar_parse_local_datetime( $switched_at );
+    if ( $planned_end_datetime && $switched_at_datetime && $switched_at_datetime >= $planned_end_datetime ) {
+        wp_send_json_error( 'Das Rennende ist erreicht. Kein Fahrerwechsel mehr möglich.' );
+    }
+
+    $switch_drivers = RAR_Race_Logic::get_next_switch_drivers( $data );
+    if ( ! $switch_drivers ) {
+        wp_send_json_error( 'Kein Fahrerwechsel möglich' );
     }
 
     if ( empty( $data['rotations'] ) && ! rar_is_first_switch_due( $data, $switch_drivers['from'], $switched_at ) ) {

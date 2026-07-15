@@ -1340,25 +1340,12 @@ test('accelerated click test can simulate a complete short race', () => {
         assert.match(harness.elements.get('#nextSwitchTimePreview').html(), /Wechsel-Prognose/);
 
         clickSwitchAt('2026-05-16T10:30:00');
-        assert.equal(raceData.rotations.length, 4);
+        assert.equal(raceData.rotations.length, 3);
+        assert.equal(raceData.race.end_time, '2026-05-16 10:30:00');
         assert.deepEqual(raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Moritz',
             'Moritz->Heiko',
             'Heiko->Stefan',
-            'Stefan->Daniel',
-        ]);
-        assert.match(harness.elements.get('#nextSwitchTimePreview').html(), /Ziel-Prognose/);
-        assert.match(harness.elements.get('#swapForecast').html(), /Zielrunde 10:30:00/);
-
-        setNow('2026-05-16T10:36:00');
-        harness.elements.get('#switchDriverBtn').trigger('click');
-        assert.equal(raceData.rotations.length, 4);
-        assert.equal(raceData.race.end_time, '2026-05-16 10:36:00');
-        assert.deepEqual(raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
-            'Daniel->Moritz',
-            'Moritz->Heiko',
-            'Heiko->Stefan',
-            'Stefan->Daniel',
         ]);
     } finally {
         Date.now = originalNow;
@@ -1448,6 +1435,42 @@ test('final stint button ends the race instead of switching drivers', () => {
 
         assert.equal(context.raceData.rotations.length, 3);
         assert.equal(context.raceData.race.end_time, '2026-05-16 10:31:00');
+    } finally {
+        context.restore();
+    }
+});
+
+test('planned race end immediately changes the switch action to end race', () => {
+    const raceData = createShortRaceData({
+        id: 263,
+        plannedEndTime: '2026-05-16 10:20:00',
+        lapTime: 300,
+        targetOffsetTime: 300,
+    });
+    raceData.rotations = [
+        {
+            id: 1,
+            from_driver_id: 1,
+            to_driver_id: 2,
+            from_driver: 'Daniel',
+            to_driver: 'Moritz',
+            switched_at: '2026-05-16 10:15:00',
+        },
+    ];
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:20:17');
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#switchDriverBtn').text(), 'Rennen beenden');
+        context.clickSwitchAt('2026-05-16T10:20:17');
+
+        assert.equal(context.raceData.rotations.length, 1);
+        assert.equal(context.raceData.race.end_time, '2026-05-16 10:20:17');
+        assert.equal(
+            context.ajaxRequests.filter((request) => request.action === 'rar_switch_driver').length,
+            0
+        );
     } finally {
         context.restore();
     }
@@ -1765,6 +1788,30 @@ test('advanced read only mode blocks switches, queue edits and race end clicks',
         assert.equal(context.raceData.race.end_time, undefined);
         assert.equal(context.harness.elements.get('#switchDriverBtn').prop('disabled'), true);
         assert.equal(context.harness.elements.get('#manualSwitchTime').prop('disabled'), true);
+    } finally {
+        context.restore();
+    }
+});
+
+test('ended race blocks further driver switches', () => {
+    const raceData = createShortRaceData({ id: 33 });
+    raceData.race.end_time = '2026-05-16 10:17:23';
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:18:00');
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#switchDriverBtn').prop('disabled'), true);
+        assert.equal(context.harness.elements.get('#switchDriverBtn').text(), 'Rennen beendet');
+        assert.equal(context.harness.elements.get('#nextSwitchPreview').text(), 'Rennen beendet');
+
+        context.clickSwitchAt('2026-05-16T10:18:00');
+
+        assert.deepEqual(context.raceData.rotations, []);
+        assert.equal(
+            context.ajaxRequests.filter((request) => request.action === 'rar_switch_driver').length,
+            0
+        );
     } finally {
         context.restore();
     }

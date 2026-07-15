@@ -532,6 +532,12 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        if (isRaceEnded()) {
+            showMessage('Das Rennen ist bereits beendet', 'error');
+            updateNextSwitchPreview();
+            return;
+        }
+
         if (isRaceStartAdjustmentMode() && isBeforeRaceStart()) {
             startRaceNow();
             return;
@@ -539,13 +545,6 @@ jQuery(document).ready(function($) {
 
         if (isFinalStintMode()) {
             endRaceFromSwitchPanel();
-            return;
-        }
-
-        if (isCurrentTimeAfterRaceEnd() && !hasManualSwitchTimeCorrection()) {
-            showMessage('Kein Fahrerwechsel möglich', 'error');
-            updateSwapForecast();
-            updateNextSwitchPreview();
             return;
         }
 
@@ -859,6 +858,15 @@ jQuery(document).ready(function($) {
         let isCorrection = isRaceStartTimeCorrection();
         let startAdjustmentMode = isRaceStartAdjustmentMode();
 
+        if (isRaceEnded()) {
+            $label.text('Wechselzeit nachträglich korrigieren');
+            $updateLastSwitchButton.prop('disabled', hasNoRecordedSwitches()).text('Wechselzeit speichern');
+            $('#undoSwitchBtn').text('Letzten Fahrerwechsel rückgängig');
+            $switchButton.prop('disabled', true).text('Rennen beendet');
+            applyReadOnlyState();
+            return;
+        }
+
         if (startAdjustmentMode) {
             $label.text('Rennstart anpassen');
             $updateLastSwitchButton.prop('disabled', false).text('Startzeit speichern');
@@ -960,15 +968,9 @@ jQuery(document).ready(function($) {
     }
 
     function isCurrentTimeAfterRaceEnd() {
-        let plannedEndTime = getEffectivePlannedEndTime(raceData && raceData.race ? raceData.race : null);
+        let plannedEndTime = parseWpDate(raceData && raceData.race ? raceData.race.planned_end_time : null);
 
         return !!(plannedEndTime && Date.now() >= plannedEndTime.getTime());
-    }
-
-    function hasManualSwitchTimeCorrection() {
-        let manualSwitchTime = getManualSwitchTimeDate();
-
-        return !!(manualSwitchTimeEdited && manualSwitchTime && !isManualSwitchTimeRaceStartValue());
     }
 
     function updateRaceStartCountdown(startTime) {
@@ -1719,6 +1721,14 @@ jQuery(document).ready(function($) {
     function updateNextSwitchPreview() {
         let switchDrivers = getNextSwitchDrivers();
 
+        if (isRaceEnded()) {
+            $('#nextSwitchPreview').text('Rennen beendet');
+            $('#nextSwitchTimePreview').text('Keine weiteren Fahrerwechsel');
+            $('#switchDriverBtn').prop('disabled', true).text('Rennen beendet');
+            applyReadOnlyState();
+            return;
+        }
+
         if (isRaceStartAdjustmentMode()) {
             $('#nextSwitchPreview').html(renderRaceStartDriverPreview(switchDrivers));
             updateNextSwitchTimePreview(switchDrivers);
@@ -1757,7 +1767,7 @@ jQuery(document).ready(function($) {
     }
 
     function getSwitchActionLabel(switchDrivers, prognosis) {
-        if (prognosis && prognosis.isFinal) {
+        if (isCurrentTimeAfterRaceEnd() || (prognosis && prognosis.isFinal)) {
             return 'Rennen beenden';
         }
 
@@ -1768,7 +1778,7 @@ jQuery(document).ready(function($) {
         let switchDrivers = getNextSwitchDrivers();
         let prognosis = getNextSwitchPrognosis(switchDrivers);
 
-        return !!(prognosis && prognosis.isFinal);
+        return isCurrentTimeAfterRaceEnd() || !!(prognosis && prognosis.isFinal);
     }
 
     function renderSwitchDriverPreview(label, driver, isNext) {
@@ -1867,18 +1877,12 @@ jQuery(document).ready(function($) {
         };
     }
 
-    function isRaceForecastComplete(lapStats) {
+    function isRaceEnded() {
         return !!(raceData && raceData.race && raceData.race.end_time);
     }
 
-    function getEffectivePlannedEndTime(race) {
-        let plannedEndTime = parseWpDate(race ? race.planned_end_time : null);
-
-        if (!plannedEndTime) {
-            return null;
-        }
-
-        return new Date(plannedEndTime.getTime() + getFinalLapOffsetSeconds(race) * 1000);
+    function isRaceForecastComplete(lapStats) {
+        return isRaceEnded();
     }
 
     function getFinalLapCutoffTime(race) {
