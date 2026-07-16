@@ -2,7 +2,7 @@
 Contributors: Daniel
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 6.5
+Tested up to: 7.0
 License: GPL-2.0+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -109,6 +109,13 @@ A: Yes. End the race and use the Excel export in the admin dashboard.
 For issues or feature requests, contact the plugin author.
 
 == Changelog ==
+
+= 0.1.4 =
+* Distinguish clock times, countdowns, and durations with clear text labels
+* Enforce locale-independent 24-hour clock formatting
+* Show forecast stint start and end times with minute-updated queue countdowns
+* Improve responsive forecast layout in admin and public dashboards
+* Update the local WordPress test image to 7.0.1
 
 = 0.1.1 =
 * Dark mode dashboard and public live view

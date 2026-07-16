@@ -74,9 +74,15 @@ if ( ! defined( 'ABSPATH' ) ) {
             <input type="hidden" id="rotationSequence">
             <div class="rar-race-title-row">
                 <h2 id="activeRaceName"></h2>
-                <div id="raceEndCountdown" class="rar-race-end-countdown">--:--:--</div>
+                <div class="rar-race-end-countdown">
+                    <span class="rar-time-kind">Countdown bis Ziel</span>
+                    <strong id="raceEndCountdown">--:--:--</strong>
+                </div>
                 <div class="rar-race-title-actions">
-                    <div id="rarCurrentClock" class="rar-current-clock">--:--:--</div>
+                    <div class="rar-current-clock">
+                        <span class="rar-time-kind">Uhrzeit</span>
+                        <strong id="rarCurrentClock">--:--:--</strong>
+                    </div>
                     <div id="readOnlyBadge" class="rar-readonly-badge" style="display: none;">Nur Lesen</div>
                 </div>
             </div>
@@ -93,7 +99,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <div class="rar-switch-action-panel">
                         <div class="rar-switch-time-row">
                             <label class="rar-field rar-switch-time">
-                                <span id="manualSwitchTimeLabel">Wechselzeit nachträglich korrigieren</span>
+                                <span id="manualSwitchTimeLabel">Wechseluhrzeit nachträglich korrigieren</span>
                                 <input type="datetime-local" id="manualSwitchTime" class="rar-input" step="1">
                             </label>
                             <button id="updateLastSwitchTimeBtn" class="rar-btn">Startzeit speichern</button>

@@ -214,33 +214,47 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
 }
 
 .rar-current-clock {
-    display: inline-flex;
-    align-items: center;
+    display: inline-grid;
+    align-content: center;
+    gap: 2px;
     min-height: 34px;
     padding: 0 2px 7px;
     color: var(--rar-text);
     border-bottom: 3px solid var(--rar-primary);
-    font-size: 24px;
-    font-weight: 800;
     line-height: 1.15;
     font-variant-numeric: tabular-nums;
 }
 
+.rar-current-clock strong,
+.rar-race-end-countdown strong {
+    font-family: Consolas, Monaco, monospace;
+    font-size: 24px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.rar-time-kind {
+    color: var(--rar-muted);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
 .rar-race-end-countdown {
-    display: inline-flex;
-    align-items: center;
+    display: inline-grid;
+    align-content: center;
+    gap: 2px;
     justify-self: start;
     min-height: 34px;
     min-width: 0;
     padding: 0 2px 7px;
     color: var(--rar-heading);
     border-bottom: 3px solid var(--rar-primary);
-    font-family: Consolas, Monaco, monospace;
-    font-size: 24px;
-    font-weight: 800;
     line-height: 1.15;
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
 }
 
 .rar-readonly-badge {
@@ -963,10 +977,28 @@ input.rar-input:-webkit-autofill,
 }
 
 .rar-forecast-meta strong {
+    display: block;
     color: var(--rar-heading);
     font-family: Consolas, Monaco, monospace;
-    font-size: 24px;
+    font-size: 17px;
     line-height: 1.05;
+}
+
+.rar-forecast-departure-time {
+    color: var(--rar-text);
+    font-weight: 800;
+}
+
+.rar-forecast-times {
+    display: flex;
+    justify-content: flex-end;
+    gap: 5px 14px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.rar-forecast-times b {
+    color: var(--rar-text);
 }
 
 .rar-forecast-lap,
@@ -1054,12 +1086,16 @@ input.rar-input:-webkit-autofill,
 }
 
 .rar-switch-time-preview strong {
+    display: grid;
+    gap: 3px;
     justify-self: end;
     font-size: 28px;
     line-height: 1;
 }
 
 .rar-switch-time-preview em {
+    display: grid;
+    gap: 3px;
     justify-self: end;
     padding: 4px 10px;
     color: var(--rar-text-on-warning);
@@ -1068,6 +1104,25 @@ input.rar-input:-webkit-autofill,
     font-size: 30px;
     font-style: normal;
     font-weight: 900;
+}
+
+.rar-switch-time-preview strong b,
+.rar-switch-time-preview em b {
+    font: inherit;
+}
+
+.rar-value-kind {
+    display: block;
+    color: currentColor;
+    font-family: sans-serif;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+    opacity: 0.78;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .rar-switch-time-preview em.is-urgent {
@@ -1399,6 +1454,10 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
     padding-bottom: 5px;
     color: #9aa6b2;
     border-bottom-color: #74b7e2;
+}
+
+.rar-public-container .rar-race-end-countdown strong,
+.rar-public-container .rar-current-clock strong {
     font-size: clamp(18px, 2.4vw, 24px);
 }
 
@@ -1515,20 +1574,26 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
 }
 
 .rar-public-container .rar-forecast-meta {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
     gap: 10px;
     width: 100%;
     min-width: 0;
 }
 
 .rar-public-container .rar-forecast-meta strong {
+    grid-column: 1 / -1;
+    justify-self: end;
     min-width: 0;
     color: var(--rar-primary);
-    font-size: clamp(24px, 4vw, 34px);
+    font-size: clamp(17px, 2.4vw, 22px);
     text-align: right;
     overflow-wrap: anywhere;
+}
+
+.rar-public-container .rar-forecast-times {
+    grid-column: 1 / -1;
 }
 
 .rar-public-container .rar-log {
@@ -1576,10 +1641,13 @@ body.rar-public-dashboard-page .wp-block-post-content > * {
 
     .rar-public-container .rar-forecast-meta {
         display: grid;
+        grid-template-columns: 1fr;
         justify-items: start;
     }
 
     .rar-public-container .rar-forecast-meta strong {
+        grid-column: auto;
+        justify-self: start;
         text-align: left;
     }
 }

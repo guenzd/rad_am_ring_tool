@@ -654,7 +654,7 @@ jQuery(document).ready(function($) {
 
         if (!manualSwitchTimeEdited) {
             $('#manualSwitchTime').focus();
-            showMessage('Wechselzeit im Feld ändern, dann Wechselzeit speichern klicken', 'error');
+            showMessage('Wechseluhrzeit im Feld ändern, dann Wechseluhrzeit speichern klicken', 'error');
             return;
         }
 
@@ -749,8 +749,8 @@ jQuery(document).ready(function($) {
         }
 
         return (
-            'Start: ' + (startTime ? formatDateTime(startTime) : '--') +
-            ' | Ziel: ' + (plannedEndTime ? formatDateTime(plannedEndTime) : '--') +
+            'Start-Uhrzeit: ' + (startTime ? formatDateTime(startTime) : '--') +
+            ' | Ziel-Uhrzeit: ' + (plannedEndTime ? formatDateTime(plannedEndTime) : '--') +
             ' | Erste Runde: +' + firstLapExtraMinutes.toFixed(2) + ' Minuten' +
             ' | Ziel-Offset: +' + targetOffsetMinutes.toFixed(2) + ' Minuten'
         );
@@ -850,7 +850,7 @@ jQuery(document).ready(function($) {
         if (!raceData || !raceData.race) {
             $switchButton.prop('disabled', true).text('Fahrerwechsel');
             $updateLastSwitchButton.prop('disabled', true);
-            $label.text('Wechselzeit nachträglich korrigieren');
+            $label.text('Wechseluhrzeit nachträglich korrigieren');
             return;
         }
 
@@ -859,8 +859,8 @@ jQuery(document).ready(function($) {
         let startAdjustmentMode = isRaceStartAdjustmentMode();
 
         if (isRaceEnded()) {
-            $label.text('Wechselzeit nachträglich korrigieren');
-            $updateLastSwitchButton.prop('disabled', hasNoRecordedSwitches()).text('Wechselzeit speichern');
+            $label.text('Wechseluhrzeit nachträglich korrigieren');
+            $updateLastSwitchButton.prop('disabled', hasNoRecordedSwitches()).text('Wechseluhrzeit speichern');
             $('#undoSwitchBtn').text('Letzten Fahrerwechsel rückgängig');
             $switchButton.prop('disabled', true).text('Rennen beendet');
             applyReadOnlyState();
@@ -883,9 +883,9 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        $label.text('Wechselzeit nachträglich korrigieren');
+        $label.text('Wechseluhrzeit nachträglich korrigieren');
         $('#undoSwitchBtn').text('Letzten Fahrerwechsel rückgängig');
-        $updateLastSwitchButton.prop('disabled', hasNoRecordedSwitches()).text('Wechselzeit speichern');
+        $updateLastSwitchButton.prop('disabled', hasNoRecordedSwitches()).text('Wechseluhrzeit speichern');
         let switchDrivers = getNextSwitchDrivers();
 
         if (switchDrivers) {
@@ -979,21 +979,21 @@ jQuery(document).ready(function($) {
         }
 
         if (Date.now() >= startTime.getTime()) {
+            $('#nextSwitchTimePreview').html(
+                '<span>Rennstart</span>' +
+                renderLabeledTimeValue('Start-Uhrzeit', formatTime(startTime), 'strong') +
+                renderLabeledTimeValue('Countdown', formatCountdown(startTime), 'em', 'is-urgent') +
+                renderCurrentLapTime()
+            );
+            return;
+        }
+
         $('#nextSwitchTimePreview').html(
             '<span>Rennstart</span>' +
-            '<strong>' + formatTime(startTime) + '</strong>' +
-            '<em class="is-urgent">' + formatCountdown(startTime) + '</em>' +
-            renderCurrentLapTime()
+            renderLabeledTimeValue('Start-Uhrzeit', formatTime(startTime), 'strong') +
+            renderLabeledTimeValue('Start in', formatCountdown(startTime), 'em')
         );
-        return;
     }
-
-    $('#nextSwitchTimePreview').html(
-        '<span>Start in</span>' +
-        '<strong>' + formatTime(startTime) + '</strong>' +
-        '<em>' + formatCountdown(startTime) + '</em>'
-    );
-}
 
     /**
      * Update drivers list display
@@ -1019,7 +1019,7 @@ jQuery(document).ready(function($) {
                     : '<label class="rar-driver-name-field"><small>Name</small><input type="text" class="rar-driver-name-input" data-driver-id="' + driver.id + '" value="' + escapeHtml(driver.driver_name) + '" aria-label="Fahrername"></label>';
                 let planHtml = publicView
                     ? '<span><small>Plan</small><strong>' + formatLapDuration(driver.avg_lap_time) + '</strong></span>'
-                    : '<label class="rar-driver-plan-field"><small>Plan</small><input type="text" inputmode="numeric" class="rar-driver-plan-time" data-driver-id="' + driver.id + '" value="' + (driver.avg_lap_time ? formatLapDuration(driver.avg_lap_time) : '') + '" aria-label="Planzeit in Minuten"></label>';
+                    : '<label class="rar-driver-plan-field"><small>Plan</small><input type="text" inputmode="numeric" class="rar-driver-plan-time" data-driver-id="' + driver.id + '" value="' + (driver.avg_lap_time ? formatLapDuration(driver.avg_lap_time) : '') + '" aria-label="Geplante Rundendauer in Minuten"></label>';
 
                 html += '<div class="rar-driver-card ' + getDriverColorClass(driver) + '" data-driver-order="' + driver.driver_order + '" tabindex="0" role="button" aria-pressed="false">' +
                     '<div class="rar-driver-order">#' + driver.driver_order + '</div>' +
@@ -1349,7 +1349,7 @@ jQuery(document).ready(function($) {
             let currentLap = getNextSwitchPrognosis(switchDrivers);
 
             return {
-                label: currentLap && currentLap.isFinal ? 'Ziel' : 'Runde',
+                label: currentLap && currentLap.isFinal ? 'Ziel in' : 'Rundenende in',
                 value: currentLap ? formatCountdown(currentLap.time) : '--'
             };
         }
@@ -1357,7 +1357,7 @@ jQuery(document).ready(function($) {
         let nextStartTime = getNextDriverRideStartTime(driver, lapStats);
 
         return {
-            label: 'Nächster',
+            label: 'Start in',
             value: nextStartTime ? formatCountdown(nextStartTime) : '--'
         };
     }
@@ -1646,6 +1646,7 @@ jQuery(document).ready(function($) {
         let finishCrossingTime = showBuffer ? getForecastFinishCrossingTime(item) : null;
         let finishLabel = finishCrossingTime ? getForecastFinishLabel(finishCrossingTime) : '';
         let buffer = finishCrossingTime ? getForecastBuffer(finishCrossingTime) : null;
+        let departureMeta = renderForecastDepartureMeta(item);
         return '<div class="' + classes + '"' + attrs + '>' +
             '<div class="rar-forecast-main">' +
                 '<span class="rar-forecast-order">#' + item.driver.driver_order + '</span>' +
@@ -1657,10 +1658,20 @@ jQuery(document).ready(function($) {
                 (canRemove ? '<button type="button" class="rar-forecast-remove" data-driver-order="' + item.driver.driver_order + '" data-index="' + item.queueIndex + '" data-source-lap="' + item.sourceLapIndex + '" aria-label="Stint aus Folge entfernen">-</button>' : '') +
             '</div>' +
             '<div class="rar-forecast-meta">' +
-                '<span>' + (item.isFinal ? 'Zielrunde ' : '') + formatTime(item.time) + '</span>' +
-                '<strong>' + formatCountdown(item.time) + '</strong>' +
+                '<span class="rar-forecast-times"><span><b>Start:</b> ' + formatTime(item.startTime) + '</span><span><b>Ende:</b> ' + formatTime(item.time) + '</span></span>' +
+                departureMeta +
             '</div>' +
             '</div>';
+    }
+
+    function renderForecastDepartureMeta(item) {
+        if (item.isCurrent || item.startTime.getTime() <= Date.now()) {
+            return '';
+        }
+
+        return '<strong class="rar-forecast-departure-countdown" data-start-time="' + item.startTime.getTime() + '">' +
+            'Start in ' + formatCountdown(item.startTime) +
+            '</strong>';
     }
 
     function getRaceEndCountdownLabel() {
@@ -1688,7 +1699,7 @@ jQuery(document).ready(function($) {
             return '';
         }
 
-        return 'Ziel ' + formatTime(finishCrossingTime);
+        return 'Zielzeit ' + formatTime(finishCrossingTime);
     }
 
     function getForecastBuffer(finishCrossingTime) {
@@ -1806,10 +1817,16 @@ jQuery(document).ready(function($) {
 
         $('#nextSwitchTimePreview').html(
             '<span>' + getSwitchTimePreviewLabel(switchDrivers, prognosis) + '</span>' +
-            '<strong>' + formatTime(prognosis.time) + '</strong>' +
-            '<em class="' + getCountdownClass(prognosis.time) + '">' + formatCountdown(prognosis.time) + '</em>' +
+            renderLabeledTimeValue(prognosis.isFinal ? 'Ziel-Uhrzeit' : 'Wechsel-Uhrzeit', formatTime(prognosis.time), 'strong') +
+            renderLabeledTimeValue('Countdown', formatCountdown(prognosis.time), 'em', getCountdownClass(prognosis.time)) +
             renderCurrentLapTime()
         );
+    }
+
+    function renderLabeledTimeValue(label, value, tagName, className) {
+        let classes = className ? ' class="' + className + '"' : '';
+
+        return '<' + tagName + classes + '><small class="rar-value-kind">' + label + '</small><b>' + value + '</b></' + tagName + '>';
     }
 
     function getCountdownClass(date) {
@@ -1908,7 +1925,7 @@ jQuery(document).ready(function($) {
             return '';
         }
 
-        return '<div class="rar-current-lap-time"><span>Aktuelle Rundenzeit</span><strong>' + formatDuration(currentLapSeconds) + '</strong></div>';
+        return '<div class="rar-current-lap-time"><span>Aktuelle Rundenzeit (Dauer)</span><strong>' + formatDuration(currentLapSeconds) + '</strong></div>';
     }
 
     function getCurrentLapElapsedSeconds() {
@@ -1960,8 +1977,8 @@ jQuery(document).ready(function($) {
 
                 html += '<div class="rar-log-entry">' +
                     escapeHtml(rotation.from_driver || '') + ' zu ' + escapeHtml(rotation.to_driver || '') +
-                    ' (' + escapeHtml(rotation.switched_at || '') + ')' +
-                    (lapSeconds !== null ? ' <span class="rar-log-lap-time">Rundenzeit: ' + escapeHtml(formatDuration(lapSeconds)) + '</span>' : '') +
+                    ' (Wechsel-Uhrzeit: ' + escapeHtml(rotation.switched_at || '') + ')' +
+                    (lapSeconds !== null ? ' <span class="rar-log-lap-time">Runden-Dauer: ' + escapeHtml(formatDuration(lapSeconds)) + '</span>' : '') +
                     '</div>';
 
                 previousTime = parseWpDate(rotation.switched_at) || previousTime;
@@ -2016,20 +2033,16 @@ jQuery(document).ready(function($) {
     }
 
     function formatDateTime(date) {
-        return date.toLocaleString([], {
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        return String(date.getDate()).padStart(2, '0') + '.' +
+            String(date.getMonth() + 1).padStart(2, '0') + '. ' +
+            String(date.getHours()).padStart(2, '0') + ':' +
+            String(date.getMinutes()).padStart(2, '0');
     }
 
     function formatTime(date) {
-        return date.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
+        return String(date.getHours()).padStart(2, '0') + ':' +
+            String(date.getMinutes()).padStart(2, '0') + ':' +
+            String(date.getSeconds()).padStart(2, '0');
     }
 
     function setDefaultRaceTimes() {

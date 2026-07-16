@@ -926,6 +926,12 @@ test('admin dashboard auto loads the newest running race on refresh', () => {
         assert.equal(context.harness.elements.get('#activeRaceName').text(), 'Auto Load Race');
         assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /#1 Daniel/);
         assert.match(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Daniel/);
+        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /Fährt jetzt/);
+        assert.match(context.harness.elements.get('#swapForecast').html(), /<b>Start:<\/b>/);
+        assert.match(context.harness.elements.get('#swapForecast').html(), /<b>Ende:<\/b>/);
+        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /Wechsel [^<]*· Uhrzeit/);
+        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /rar-forecast-departure-countdown[\s\S]*?<small/);
+        assert.match(context.harness.elements.get('#swapForecast').html(), /Start in 00:05:00/);
     } finally {
         context.restore();
     }
@@ -1166,8 +1172,10 @@ test('switch preview shows current lap time and log shows driven lap times', () 
 
         assert.match(context.harness.elements.get('#nextSwitchTimePreview').html(), /Aktuelle Rundenzeit/);
         assert.match(context.harness.elements.get('#nextSwitchTimePreview').html(), /00:05:15/);
-        assert.match(context.harness.elements.get('#switchLog').html(), /Rundenzeit: 00:15:00/);
-        assert.match(context.harness.elements.get('#switchLog').html(), /Rundenzeit: 00:22:30/);
+        assert.match(context.harness.elements.get('#nextSwitchTimePreview').html(), /Wechsel-Uhrzeit/);
+        assert.match(context.harness.elements.get('#nextSwitchTimePreview').html(), /Countdown/);
+        assert.match(context.harness.elements.get('#switchLog').html(), /Runden-Dauer: 00:15:00/);
+        assert.match(context.harness.elements.get('#switchLog').html(), /Runden-Dauer: 00:22:30/);
     } finally {
         context.restore();
     }
@@ -1960,10 +1968,11 @@ test('forecast shows the final stint after the buffered penultimate driver', () 
 
         assert.match(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Moritz/);
         assert.match(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Daniel/);
-        assert.match(context.harness.elements.get('#swapForecast').html(), /Zielrunde 10:35:42 PM/);
-        assert.match(context.harness.elements.get('#swapForecast').html(), /Ziel 09:57:42 PM/);
-        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /Ziel 10:19:00 PM/);
-        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /Ziel 10:35:42 PM<\/span><button/);
+        assert.equal(context.harness.elements.get('#rarCurrentClock').text(), '21:48:07');
+        assert.match(context.harness.elements.get('#swapForecast').html(), /<b>Ende:<\/b> 22:35:42/);
+        assert.match(context.harness.elements.get('#swapForecast').html(), /Zielzeit 21:57:42/);
+        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /<b>Ende:<\/b> 22:19:00/);
+        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /\b(?:AM|PM)\b/);
         assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Heiko/);
     } finally {
         context.restore();

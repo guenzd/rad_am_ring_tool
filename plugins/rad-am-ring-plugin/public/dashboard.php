@@ -64,9 +64,15 @@ if ( ! function_exists( 'rar_public_get_rotation_lap_seconds' ) ) {
 
             <div class="rar-race-title-row">
                 <h2 id="activeRaceName"><?php echo $public_race ? esc_html( $public_race->race_name ) : ''; ?></h2>
-                <div id="raceEndCountdown" class="rar-race-end-countdown">--:--:--</div>
+                <div class="rar-race-end-countdown">
+                    <span class="rar-time-kind">Countdown bis Ziel</span>
+                    <strong id="raceEndCountdown">--:--:--</strong>
+                </div>
                 <div class="rar-race-title-actions">
-                    <div id="rarCurrentClock" class="rar-current-clock">--:--:--</div>
+                    <div class="rar-current-clock">
+                        <span class="rar-time-kind">Uhrzeit</span>
+                        <strong id="rarCurrentClock">--:--:--</strong>
+                    </div>
                 </div>
             </div>
 
@@ -90,7 +96,7 @@ if ( ! function_exists( 'rar_public_get_rotation_lap_seconds' ) ) {
                                 <div class="rar-driver-order">#<?php echo esc_html( $driver->driver_order ); ?></div>
                                 <div class="rar-driver-name"><?php echo esc_html( $driver->driver_name ); ?></div>
                                 <div class="rar-driver-stats-row">
-                                    <span><small>Plan</small><strong><?php echo esc_html( rar_public_format_lap_duration( $driver->avg_lap_time ) ); ?></strong></span>
+                                    <span><small>Plan-Dauer</small><strong><?php echo esc_html( rar_public_format_lap_duration( $driver->avg_lap_time ) ); ?></strong></span>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -109,8 +115,8 @@ if ( ! function_exists( 'rar_public_get_rotation_lap_seconds' ) ) {
                         $target_offset_minutes = floatval( $public_race->target_offset_time ?? 0 ) / 60;
                         ?>
                         <div class="rar-log-entry rar-log-entry-config">
-                            Start: <?php echo esc_html( mysql2date( 'd.m. H:i', $public_race->start_time ) ); ?>
-                            | Ziel: <?php echo esc_html( mysql2date( 'd.m. H:i', $public_race->planned_end_time ) ); ?>
+                            Start-Uhrzeit: <?php echo esc_html( mysql2date( 'd.m. H:i', $public_race->start_time ) ); ?>
+                            | Ziel-Uhrzeit: <?php echo esc_html( mysql2date( 'd.m. H:i', $public_race->planned_end_time ) ); ?>
                             | Erste Runde: +<?php echo esc_html( number_format_i18n( $first_lap_extra_minutes, 2 ) ); ?> Minuten
                             | Ziel-Offset: +<?php echo esc_html( number_format_i18n( $target_offset_minutes, 2 ) ); ?> Minuten
                         </div>
@@ -124,9 +130,9 @@ if ( ! function_exists( 'rar_public_get_rotation_lap_seconds' ) ) {
                             ?>
                             <div class="rar-log-entry">
                                 <?php echo esc_html( $rotation->from_driver ); ?> zu <?php echo esc_html( $rotation->to_driver ); ?>
-                                (<?php echo esc_html( $rotation->switched_at ); ?>)
+                                (Wechsel-Uhrzeit: <?php echo esc_html( $rotation->switched_at ); ?>)
                                 <?php if ( null !== $lap_seconds ) : ?>
-                                    <span class="rar-log-lap-time">Rundenzeit: <?php echo esc_html( rar_public_format_elapsed_duration( $lap_seconds ) ); ?></span>
+                                    <span class="rar-log-lap-time">Runden-Dauer: <?php echo esc_html( rar_public_format_elapsed_duration( $lap_seconds ) ); ?></span>
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>

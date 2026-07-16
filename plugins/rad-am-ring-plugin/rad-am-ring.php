@@ -3,7 +3,7 @@
  * Plugin Name: Rad am Ring
  * Plugin URI: 
  * Description: 24-Stunden-Bike-Rennen-Fahrer- & Rundenverfolgungs-Tool
- * Version: 0.1.3
+ * Version: 0.1.4
  * Author: Daniel
  * Author URI: 
  * License: GPL-2.0+
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'RAR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'RAR_PLUGIN_VERSION', '0.1.3' );
+define( 'RAR_PLUGIN_VERSION', '0.1.4' );
 define( 'RAR_DB_VERSION', '0.6.0' );
 define( 'RAR_FIRST_SWITCH_LOCK_MINUTES', 15 );
 
@@ -328,7 +328,7 @@ function rar_ajax_switch_driver() {
     if ( $switched_at_input ) {
         $switched_at_datetime = rar_parse_local_datetime( $switched_at_input );
         if ( ! $switched_at_datetime ) {
-            wp_send_json_error( 'Ungültige Wechselzeit' );
+            wp_send_json_error( 'Ungültige Wechseluhrzeit' );
         }
         $switched_at = $switched_at_datetime->format( 'Y-m-d H:i:s' );
     }
@@ -698,7 +698,7 @@ function rar_ajax_update_last_driver_switch_time() {
 
     $switched_at_datetime = rar_parse_local_datetime( $switched_at_input );
     if ( ! $switched_at_datetime ) {
-        wp_send_json_error( 'Ungültige Wechselzeit' );
+        wp_send_json_error( 'Ungültige Wechseluhrzeit' );
     }
 
     $data = RAR_Database::get_race_data( $race_id );
