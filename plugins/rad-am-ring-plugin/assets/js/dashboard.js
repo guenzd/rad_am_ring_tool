@@ -299,6 +299,7 @@ jQuery(document).ready(function($) {
                     $('#raceSetupPanel').prop('open', false);
                     $('#rotationSequence').val(raceData.race.rotation_sequence || '');
                     updateManualTimeInputs();
+                    updateActualFinishTimeControls();
                     updateExportLink();
                     $('#addDriverPanel').show();
                     $('#raceContent').show();
@@ -692,6 +693,64 @@ jQuery(document).ready(function($) {
         endRace(formatMysqlDateTimeLocal(getCurrentDate()));
     });
 
+    $('#saveActualFinishTimeBtn').on('click', function() {
+        if (!ensureCanEdit()) {
+            return;
+        }
+
+        if (!currentRaceId || !isRaceEnded()) {
+            showMessage('Bitte laden Sie ein beendetes Rennen', 'error');
+            return;
+        }
+
+        let value = $('#actualFinishTime').val();
+        let endTime = parseWpDate(value ? value.replace('T', ' ') : '');
+        let startTime = parseWpDate(raceData.race.start_time);
+        let rotations = getOrderedRotations();
+        let latestRotation = rotations.length ? rotations[rotations.length - 1] : null;
+        let latestSwitchTime = latestRotation ? parseWpDate(latestRotation.switched_at) : null;
+
+        if (!endTime) {
+            showMessage('Bitte geben Sie eine gültige tatsächliche Zielzeit ein', 'error');
+            return;
+        }
+
+        if (startTime && endTime.getTime() <= startTime.getTime()) {
+            showMessage('Die tatsächliche Zielzeit muss nach der Startzeit liegen', 'error');
+            return;
+        }
+
+        if (latestSwitchTime && endTime.getTime() <= latestSwitchTime.getTime()) {
+            showMessage('Die tatsächliche Zielzeit muss nach dem letzten Fahrerwechsel liegen', 'error');
+            return;
+        }
+
+        $.ajax({
+            url: rarData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'rar_update_race_end_time',
+                race_id: currentRaceId,
+                end_time: formatMysqlDateTimeLocal(endTime),
+                nonce: rarData.nonce,
+            },
+            success: function(response) {
+                if (response.success) {
+                    raceData.race.end_time = response.data.end_time;
+                    updateActualFinishTimeControls();
+                    updateExportLink();
+                    showMessage('Tatsächliche Zielzeit gespeichert. Der Export verwendet jetzt diese Zeit.', 'success');
+                    loadAllRaces();
+                } else {
+                    showMessage('Fehler beim Speichern der Zielzeit: ' + response.data, 'error');
+                }
+            },
+            error: function() {
+                showMessage('AJAX-Fehler', 'error');
+            }
+        });
+    });
+
     function endRaceFromSwitchPanel() {
         endRace(getSwitchDriverRequestTimeValue());
     }
@@ -770,6 +829,22 @@ jQuery(document).ready(function($) {
                     '?action=rar_export_race&race_id=' + encodeURIComponent(raceData.race.id) +
                     '&nonce=' + encodeURIComponent(rarData.nonce)
             );
+    }
+
+    function updateActualFinishTimeControls() {
+        let ended = isRaceEnded();
+        let endTime = ended ? parseWpDate(raceData.race.end_time) : null;
+
+        $('#actualFinishTimePanel').toggle(ended);
+        $('#endRaceBtn').toggle(!ended);
+
+        if (endTime) {
+            $('#actualFinishTime').val(formatDateTimeLocal(endTime));
+        } else {
+            $('#actualFinishTime').val('');
+        }
+
+        applyReadOnlyState();
     }
 
     function updateManualTimeInputs() {
@@ -1476,13 +1551,13 @@ jQuery(document).ready(function($) {
 
         $(
             '#createRaceBtn, #addDriverBtn, #switchDriverBtn, ' +
-            '#updateLastSwitchTimeBtn, #undoSwitchBtn, #endRaceBtn, #deleteRaceBtn, ' +
+            '#updateLastSwitchTimeBtn, #undoSwitchBtn, #endRaceBtn, #saveActualFinishTimeBtn, #deleteRaceBtn, ' +
             '.rar-forecast-remove'
         ).prop('disabled', true);
 
         $(
             '#raceName, #raceStartTime, #plannedEndTime, #firstLapExtraTime, #targetOffsetTime, ' +
-            '#defaultDriverNames, #driverName, #avgLapTime, #manualSwitchTime, ' +
+            '#defaultDriverNames, #driverName, #avgLapTime, #manualSwitchTime, #actualFinishTime, ' +
             '.rar-driver-plan-time, .rar-driver-name-input'
         ).prop('disabled', true);
 

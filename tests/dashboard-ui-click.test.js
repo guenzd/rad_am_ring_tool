@@ -84,7 +84,13 @@ function createElement(selector, length = 1) {
         },
         addClass() { return this; },
         removeClass() { return this; },
-        toggle() { return this; },
+        toggle(visible) {
+            if (typeof visible === 'boolean') {
+                this.props.hidden = !visible;
+            }
+
+            return this;
+        },
         toggleClass() { return this; },
         data(name, value) {
             this.dataValues = this.dataValues || {};
@@ -426,6 +432,13 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
             return ajaxResult(response);
         }
 
+        if (options.data.action === 'rar_update_race_end_time') {
+            raceData.race.end_time = options.data.end_time;
+            const response = { success: true, data: { end_time: options.data.end_time } };
+            options.success(response);
+            return ajaxResult(response);
+        }
+
         if (options.data.action === 'rar_delete_race') {
             raceData.deleted = true;
             const response = { success: true, data: { deleted: true } };
@@ -506,6 +519,11 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
         harness.elements.get('#endRaceBtn').trigger('click');
     }
 
+    function saveActualFinishTime(value) {
+        harness.elements.get('#actualFinishTime').val(value);
+        harness.elements.get('#saveActualFinishTimeBtn').trigger('click');
+    }
+
     function clickDelete() {
         harness.elements.get('#deleteRaceBtn').trigger('click');
     }
@@ -578,6 +596,7 @@ function createDashboardClickTest(raceData, initialNow, options = {}) {
         clickSwitchAt,
         clickUndo,
         clickEndAt,
+        saveActualFinishTime,
         clickDelete,
         clickForecastRemove,
         triggerDelegatedChange,
@@ -1820,6 +1839,37 @@ test('ended race blocks further driver switches', () => {
             context.ajaxRequests.filter((request) => request.action === 'rar_switch_driver').length,
             0
         );
+    } finally {
+        context.restore();
+    }
+});
+
+test('finished race allows its actual finish time to be corrected for export', () => {
+    const raceData = createShortRaceData({ id: 34 });
+    raceData.race.end_time = '2026-05-16 10:17:23';
+    raceData.rotations.push({
+        id: 1,
+        from_driver_id: 1,
+        to_driver_id: 2,
+        switched_at: '2026-05-16 10:05:00',
+    });
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:30:00');
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#actualFinishTimePanel').props.hidden, false);
+        assert.equal(context.harness.elements.get('#actualFinishTime').val(), '2026-05-16T10:17:23');
+        assert.equal(context.harness.elements.get('#endRaceBtn').props.hidden, true);
+
+        context.saveActualFinishTime('2026-05-16T10:18:45');
+
+        assert.equal(context.raceData.race.end_time, '2026-05-16 10:18:45');
+        assert.equal(
+            context.ajaxRequests.filter((request) => request.action === 'rar_update_race_end_time').length,
+            1
+        );
+        assert.match(context.harness.elements.get('#exportRaceBtn').attr('href'), /rar_export_race/);
     } finally {
         context.restore();
     }

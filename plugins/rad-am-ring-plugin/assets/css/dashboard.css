@@ -616,6 +616,21 @@ input.rar-input:-webkit-autofill,
     text-decoration: none;
 }
 
+.rar-finish-time-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: end;
+}
+
+.rar-finish-time-panel .rar-field {
+    min-width: 0;
+}
+
+.rar-finish-time-panel .rar-btn {
+    min-height: 44px;
+}
+
 .rar-btn:disabled {
     opacity: 0.52;
     cursor: not-allowed;

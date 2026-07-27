@@ -121,6 +121,13 @@ if ( ! defined( 'ABSPATH' ) ) {
             <!-- End Race -->
             <div class="rar-card">
                 <a id="exportRaceBtn" class="rar-btn rar-btn-success rar-btn-full" href="#" style="display: none;">Excel Export</a>
+                <div id="actualFinishTimePanel" class="rar-finish-time-panel" style="display: none;">
+                    <label class="rar-field">
+                        <span>Tatsächliche Zielzeit</span>
+                        <input type="datetime-local" id="actualFinishTime" class="rar-input" step="1">
+                    </label>
+                    <button id="saveActualFinishTimeBtn" class="rar-btn rar-btn-primary">Zielzeit speichern</button>
+                </div>
                 <button id="endRaceBtn" class="rar-btn rar-btn-danger">Rennsitzung beenden</button>
             </div>
 

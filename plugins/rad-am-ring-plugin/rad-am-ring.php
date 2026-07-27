@@ -141,6 +141,7 @@ add_action( 'wp_ajax_rar_add_driver', 'rar_ajax_add_driver' );
 add_action( 'wp_ajax_rar_update_driver_plan_time', 'rar_ajax_update_driver_plan_time' );
 add_action( 'wp_ajax_rar_update_driver_name', 'rar_ajax_update_driver_name' );
 add_action( 'wp_ajax_rar_end_race', 'rar_ajax_end_race' );
+add_action( 'wp_ajax_rar_update_race_end_time', 'rar_ajax_update_race_end_time' );
 add_action( 'wp_ajax_rar_get_all_races', 'rar_ajax_get_all_races' );
 add_action( 'wp_ajax_rar_save_rotation_sequence', 'rar_ajax_save_rotation_sequence' );
 add_action( 'wp_ajax_rar_mutate_rotation_queue', 'rar_ajax_mutate_rotation_queue' );
@@ -520,6 +521,64 @@ function rar_ajax_end_race() {
 
     RAR_Database::end_race( $race_id, $end_time );
     wp_send_json_success( [ 'ended' => true ] );
+}
+
+function rar_ajax_update_race_end_time() {
+    if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rar_nonce' ) ) {
+        wp_send_json_error( 'Sicherheitsüberprüfung fehlgeschlagen' );
+    }
+
+    rar_require_edit_access();
+
+    $race_id = intval( $_POST['race_id'] ?? 0 );
+    $end_time_input = sanitize_text_field( wp_unslash( $_POST['end_time'] ?? '' ) );
+
+    if ( ! $race_id || ! $end_time_input ) {
+        wp_send_json_error( 'Rennen-ID und tatsächliche Zielzeit erforderlich' );
+    }
+
+    $data = RAR_Database::get_race_data( $race_id );
+    if ( empty( $data['race'] ) ) {
+        wp_send_json_error( 'Rennen nicht gefunden' );
+    }
+
+    if ( empty( $data['race']->end_time ) ) {
+        wp_send_json_error( 'Die Zielzeit kann erst nach Rennende korrigiert werden' );
+    }
+
+    $end_datetime = rar_parse_local_datetime( $end_time_input );
+    $start_datetime = rar_parse_local_datetime( $data['race']->start_time ?? '' );
+
+    if ( ! $end_datetime ) {
+        wp_send_json_error( 'Ungültige Zielzeit' );
+    }
+
+    if ( $start_datetime && $end_datetime <= $start_datetime ) {
+        wp_send_json_error( 'Die tatsächliche Zielzeit muss nach der Startzeit liegen' );
+    }
+
+    $rotations = $data['rotations'] ?? [];
+    if ( $rotations ) {
+        usort(
+            $rotations,
+            function ( $a, $b ) {
+                $time_compare = strcmp( $a->switched_at, $b->switched_at );
+                return 0 !== $time_compare ? $time_compare : intval( $a->id ) <=> intval( $b->id );
+            }
+        );
+
+        $latest_rotation = end( $rotations );
+        $latest_switch_datetime = rar_parse_local_datetime( $latest_rotation->switched_at ?? '' );
+
+        if ( $latest_switch_datetime && $end_datetime <= $latest_switch_datetime ) {
+            wp_send_json_error( 'Die tatsächliche Zielzeit muss nach dem letzten Fahrerwechsel liegen' );
+        }
+    }
+
+    $end_time = $end_datetime->format( 'Y-m-d H:i:s' );
+    RAR_Database::end_race( $race_id, $end_time );
+
+    wp_send_json_success( [ 'end_time' => $end_time ] );
 }
 
 function rar_ajax_delete_race() {
