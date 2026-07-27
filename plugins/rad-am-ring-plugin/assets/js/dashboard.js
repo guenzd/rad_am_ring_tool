@@ -20,6 +20,7 @@ jQuery(document).ready(function($) {
     let pendingRaceStart = null;
     const FIRST_SWITCH_LOCK_MINUTES = 15;
     const DEFAULT_FINAL_LAP_OFFSET_SECONDS = 5 * 60;
+    const FINAL_LAP_FORECAST_GRACE_SECONDS = 10 * 60;
     const PUBLIC_RACE_REFRESH_MS = 5000;
 
     // Load all races on startup
@@ -1086,7 +1087,7 @@ jQuery(document).ready(function($) {
             html = '<p>Noch keine Fahrer</p>';
         } else {
             raceData.drivers.forEach(function(driver) {
-                let stats = lapStats.byDriver[driver.id] || { count: 0, total: 0, recentAverage: null };
+                let stats = lapStats.byDriver[driver.id] || { count: 0, total: 0, average: null };
                 let remainingLaps = lapCountProjection.remainingByDriver[driver.id] || 0;
                 let rideCountdown = getDriverRideCountdown(driver, lapStats);
                 let driverNameHtml = publicView
@@ -1103,7 +1104,7 @@ jQuery(document).ready(function($) {
                         '<span><small>Runden</small><strong>' + stats.count + '</strong></span>' +
                         '<span><small>Noch</small><strong>' + remainingLaps + '</strong></span>' +
                         planHtml +
-                        '<span><small>3er Ø</small><strong>' + formatLapDuration(stats.recentAverage) + '</strong></span>' +
+                        '<span><small>Ø</small><strong>' + formatLapDuration(stats.average) + '</strong></span>' +
                         '<span><small>' + rideCountdown.label + '</small><strong>' + rideCountdown.value + '</strong></span>' +
                     '</div>' +
                     '</div>';
@@ -1628,7 +1629,7 @@ jQuery(document).ready(function($) {
         let firstLapExtra = parseFloat(raceData.race.first_lap_extra_time || 0);
         let baseTime = getForecastBaseTime(lapStats);
         let plannedEndTime = parseWpDate(raceData.race.planned_end_time);
-        let finalLapCutoffTime = getFinalLapCutoffTime(raceData.race);
+        let finalLapForecastLimitTime = getFinalLapForecastLimitTime(raceData.race);
         let finalLapOffset = getFinalLapOffsetSeconds(raceData.race);
         let recordedLaps = lapStats.completedLaps;
 
@@ -1675,7 +1676,10 @@ jQuery(document).ready(function($) {
                 plannedEndTime &&
                 (
                     startedAfterPlannedEnd ||
-                    (finalLapCutoffTime && normalSwitchTime.getTime() >= finalLapCutoffTime.getTime())
+                    (
+                        finalLapForecastLimitTime &&
+                        normalSwitchTime.getTime() > finalLapForecastLimitTime.getTime()
+                    )
                 )
             );
             if (startedAfterPlannedEnd) {
@@ -1943,14 +1947,17 @@ jQuery(document).ready(function($) {
 
         let predictedTime = new Date(baseTime.getTime() + (lapSeconds * 1000));
         let plannedEndTime = parseWpDate(raceData.race.planned_end_time);
-        let finalLapCutoffTime = getFinalLapCutoffTime(raceData.race);
+        let finalLapForecastLimitTime = getFinalLapForecastLimitTime(raceData.race);
         let finalLapOffset = getFinalLapOffsetSeconds(raceData.race);
 
         if (
             plannedEndTime &&
             (
                 baseTime.getTime() >= plannedEndTime.getTime() ||
-                (finalLapCutoffTime && predictedTime.getTime() >= finalLapCutoffTime.getTime())
+                (
+                    finalLapForecastLimitTime &&
+                    predictedTime.getTime() > finalLapForecastLimitTime.getTime()
+                )
             )
         ) {
             let finalTime = baseTime.getTime() >= plannedEndTime.getTime()
@@ -1985,6 +1992,16 @@ jQuery(document).ready(function($) {
         }
 
         return new Date(plannedEndTime.getTime() + getFinalLapOffsetSeconds(race) * 1000);
+    }
+
+    function getFinalLapForecastLimitTime(race) {
+        let finalLapCutoffTime = getFinalLapCutoffTime(race);
+
+        if (!finalLapCutoffTime) {
+            return null;
+        }
+
+        return new Date(finalLapCutoffTime.getTime() + FINAL_LAP_FORECAST_GRACE_SECONDS * 1000);
     }
 
     function getFinalLapOffsetSeconds(race) {

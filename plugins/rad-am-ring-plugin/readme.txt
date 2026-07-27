@@ -18,7 +18,7 @@ Rad am Ring is a WordPress plugin designed to track drivers and lap times during
 * Queue-based change prognosis with quick edit controls
 * Dark theme optimized for outdoor/night use
 * Public read-only live dashboard for blog readers
-* Real-time statistics, rolling averages, and race-end buffer forecast
+* Real-time statistics, average lap times, and race-end buffer forecast
 * Excel export after a race has ended
 
 == Installation ==
@@ -61,7 +61,7 @@ The page uses the `[rad_am_ring_public]` shortcode and is created automatically 
 - **Quick Queue Editing**: Remove upcoming stints directly from the forecast
 - **Manual Time Corrections**: Correct race start or driver switch times to the second
 - **Multi-Driver Support**: Track unlimited drivers per race
-- **Driver Statistics**: Completed laps, remaining projected laps, rolling 3-lap average, and next ride countdown
+- **Driver Statistics**: Completed laps, remaining projected laps, average lap time across all completed laps, and next ride countdown
 - **Public Dashboard**: Read-only live view for blog readers
 - **Race Export**: Excel export after the race is ended
 - **Responsive Design**: Works on desktop, tablet, and mobile devices

@@ -1503,6 +1503,71 @@ test('planned race end immediately changes the switch action to end race', () =>
     }
 });
 
+test('next driver remains available when the forecast misses the final-lap cutoff by at most ten minutes', () => {
+    const raceData = createShortRaceData({
+        id: 264,
+        plannedEndTime: '2026-05-16 10:30:00',
+        lapTime: 21 * 60,
+        targetOffsetTime: 5 * 60,
+    });
+    raceData.rotations = [
+        {
+            id: 1,
+            from_driver_id: 1,
+            to_driver_id: 2,
+            from_driver: 'Daniel',
+            to_driver: 'Moritz',
+            switched_at: '2026-05-16 10:15:00',
+        },
+    ];
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:29:00');
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#switchDriverBtn').text(), 'Fahrerwechsel');
+        assert.match(context.harness.elements.get('#nextSwitchPreview').html(), /Heiko/);
+        assert.match(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Heiko/);
+
+        context.clickSwitchAt('2026-05-16T10:29:30');
+
+        assert.equal(context.raceData.rotations.length, 2);
+        assert.equal(context.raceData.rotations[1].switched_at, '2026-05-16 10:29:30');
+        assert.equal(context.raceData.race.end_time, undefined);
+    } finally {
+        context.restore();
+    }
+});
+
+test('forecast still marks the current stint final when it misses the cutoff by more than ten minutes', () => {
+    const raceData = createShortRaceData({
+        id: 265,
+        plannedEndTime: '2026-05-16 10:30:00',
+        lapTime: 31 * 60,
+        targetOffsetTime: 5 * 60,
+    });
+    raceData.rotations = [
+        {
+            id: 1,
+            from_driver_id: 1,
+            to_driver_id: 2,
+            from_driver: 'Daniel',
+            to_driver: 'Moritz',
+            switched_at: '2026-05-16 10:15:00',
+        },
+    ];
+    const context = createDashboardClickTest(raceData, '2026-05-16T10:29:00');
+
+    try {
+        context.loadDashboard();
+
+        assert.equal(context.harness.elements.get('#switchDriverBtn').text(), 'Rennen beenden');
+        assert.doesNotMatch(context.harness.elements.get('#swapForecast').html(), /rar-forecast-name">Heiko/);
+    } finally {
+        context.restore();
+    }
+});
+
 test('final stint race end uses the action time, not the latest-switch correction field', () => {
     const raceData = createShortRaceData({
         id: 261,
@@ -1615,12 +1680,14 @@ test('advanced queue quick edit changes upcoming drivers and still reaches race 
 
         context.clickSwitchAt('2026-05-16T10:20:00');
         context.clickSwitchAt('2026-05-16T10:25:00');
+        context.clickSwitchAt('2026-05-16T10:30:00');
 
         assert.deepEqual(context.raceData.rotations.map((rotation) => `${rotation.from_driver}->${rotation.to_driver}`), [
             'Daniel->Heiko',
             'Heiko->Daniel',
+            'Daniel->Moritz',
         ]);
-        assert.equal(context.raceData.race.end_time, '2026-05-16 10:25:00');
+        assert.equal(context.raceData.race.end_time, '2026-05-16 10:30:00');
     } finally {
         context.restore();
     }

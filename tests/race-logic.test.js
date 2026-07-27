@@ -180,8 +180,8 @@ test('infers lap durations from driver switches', () => {
     const stats = logic.getInferredLapStats(data, parseDate);
 
     assert.equal(stats.completedLaps, 2);
-    assert.equal(stats.byDriver['1'].recentAverage, 45 * 60);
-    assert.equal(stats.byDriver['2'].recentAverage, 45 * 60);
+    assert.equal(stats.byDriver['1'].average, 45 * 60);
+    assert.equal(stats.byDriver['2'].average, 45 * 60);
     assert.equal(stats.latestSwitchTime.getTime(), parseDate('2026-05-01 11:30:00').getTime());
 });
 
@@ -197,7 +197,7 @@ test('falls back to planned lap time when switch timing is inconsistent', () => 
 
     assert.equal(stats.completedLaps, 1);
     assert.equal(stats.byDriver['1'].count, 1);
-    assert.equal(stats.byDriver['1'].recentAverage, 45 * 60);
+    assert.equal(stats.byDriver['1'].average, 45 * 60);
     assert.equal(stats.latestSwitchTime, null);
 });
 
@@ -220,7 +220,7 @@ test('does not infer lap duration when switch timing and planned lap time are mi
     assert.equal(stats.byDriver['1'].count, 1);
     assert.equal(stats.byDriver['1'].total, 0);
     assert.deepEqual(stats.byDriver['1'].laps, []);
-    assert.equal(stats.byDriver['1'].recentAverage, null);
+    assert.equal(stats.byDriver['1'].average, null);
 });
 
 test('invalid switch timing does not advance the next timed lap baseline', () => {
@@ -234,8 +234,8 @@ test('invalid switch timing does not advance the next timed lap baseline', () =>
 
     const stats = logic.getInferredLapStats(data, parseDate);
 
-    assert.equal(stats.byDriver['1'].recentAverage, 45 * 60);
-    assert.equal(stats.byDriver['2'].recentAverage, 45 * 60);
+    assert.equal(stats.byDriver['1'].average, 45 * 60);
+    assert.equal(stats.byDriver['2'].average, 45 * 60);
     assert.equal(stats.latestSwitchTime.getTime(), parseDate('2026-05-01 10:45:00').getTime());
 });
 
@@ -249,10 +249,10 @@ test('deducts first lap extra time from the first inferred lap', () => {
 
     const stats = logic.getInferredLapStats(data, parseDate);
 
-    assert.equal(stats.byDriver['1'].recentAverage, 45 * 60);
+    assert.equal(stats.byDriver['1'].average, 45 * 60);
 });
 
-test('uses only the previous three laps for a driver average', () => {
+test('uses all completed laps for a driver average', () => {
     const data = raceData({
         race: { first_lap_extra_time: 0 },
         rotations: [
@@ -268,14 +268,14 @@ test('uses only the previous three laps for a driver average', () => {
 
     const stats = logic.getInferredLapStats(data, parseDate);
 
-    assert.deepEqual(stats.byDriver['1'].laps, [50 * 60, 60 * 60, 70 * 60]);
-    assert.equal(stats.byDriver['1'].recentAverage, 60 * 60);
+    assert.deepEqual(stats.byDriver['1'].laps, [40 * 60, 50 * 60, 60 * 60, 70 * 60]);
+    assert.equal(stats.byDriver['1'].average, 55 * 60);
 });
 
-test('forecast lap time uses rolling average when available', () => {
+test('forecast lap time uses the average across all completed laps when available', () => {
     const stats = {
         byDriver: {
-            1: { recentAverage: 43 * 60 }
+            1: { average: 43 * 60 }
         }
     };
 
@@ -377,7 +377,7 @@ test('lap prognosis starts from completed laps and latest real switch time', () 
     const prognosis = logic.calculateLapPrognosis(data, '1,1,1,1,1', parseDate);
 
     assert.equal(prognosis.laps, 5);
-    assert.equal(prognosis.bufferMinutes, -34);
+    assert.equal(prognosis.bufferMinutes, -25);
 });
 
 test('lap prognosis returns null for invalid race times', () => {

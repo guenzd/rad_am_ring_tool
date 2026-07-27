@@ -89,7 +89,7 @@
             count: 0,
             total: 0,
             laps: [],
-            recentAverage: null
+            average: null
         };
     }
 
@@ -158,8 +158,7 @@
     function addDriverLapSeconds(driverStats, lapSeconds) {
         driverStats.total += lapSeconds;
         driverStats.laps.push(lapSeconds);
-        driverStats.laps = driverStats.laps.slice(-3);
-        driverStats.recentAverage = getAverage(driverStats.laps);
+        driverStats.average = getAverage(driverStats.laps);
     }
 
     function getAverage(values) {
@@ -171,8 +170,8 @@
     function getForecastLapSeconds(driver, lapStats) {
         let stats = lapStats.byDriver[String(driver.id)];
 
-        if (stats && stats.recentAverage) {
-            return stats.recentAverage;
+        if (stats && stats.average) {
+            return stats.average;
         }
 
         return parseFloat(driver.avg_lap_time || 0);
